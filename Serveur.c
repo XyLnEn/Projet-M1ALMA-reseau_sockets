@@ -123,12 +123,18 @@ main(int argc, char **argv) {
 			exit(1);
 		}
 		
-		/* traitement du message */
-		printf("reception d'un message.\n");
+		if(fork() ==0) {
 		
-		renvoi(nouv_socket_descriptor);
+			/* traitement du message */
+			printf("reception d'un message.\n");
+		
+			renvoi(nouv_socket_descriptor);
 						
-		close(nouv_socket_descriptor);
+			close(nouv_socket_descriptor);
+		} else {
+			close(nouv_socket_descriptor);
+		}
+		
 		
     }
     
