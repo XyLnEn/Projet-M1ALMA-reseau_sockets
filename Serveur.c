@@ -6,7 +6,8 @@ Serveur à lancer avant le client
 #include <linux/types.h> 	/* pour les sockets */
 #include <sys/socket.h>
 #include <netdb.h> 		/* pour hostent, servent */
-#include <string.h> 		/* pour bcopy, ... */  
+#include <string.h> 
+#include <pthread.h>		/* pour bcopy, ... */  
 #define TAILLE_MAX_NOM 256
 
 typedef struct sockaddr sockaddr;
@@ -23,27 +24,31 @@ void renvoi (int sock) {
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
     	return;
     
+    
+	/* traitement du message */
+	printf("reception d'un message.\n");
     printf("message lu : %s \n", buffer);
     
-    buffer[0] = 'R';
-    buffer[1] = 'E';
-    buffer[longueur] = '#';
+    //buffer[0] = 'R';
+    //buffer[1] = 'E';
+    //buffer[longueur] = '#';
     buffer[longueur+1] ='\0';
     
     printf("message apres traitement : %s \n", buffer);
     
     printf("renvoi du message traite.\n");
 
-    /* mise en attente du prgramme pour simuler un delai de transmission */
-    sleep(3);
     
     write(sock,buffer,strlen(buffer)+1);
     
     printf("message envoye. \n");
+    
+    //close(sock);
         
     return;
     
 }
+
 /*------------------------------------------------------*/
 
 /*------------------------------------------------------*/
@@ -59,6 +64,7 @@ main(int argc, char **argv) {
     char 		machine[TAILLE_MAX_NOM+1]; 	/* nom de la machine locale */
     
     gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
+    
     
     /* recuperation de la structure d'adresse en utilisant le nom */
     if ((ptr_hote = gethostbyname(machine)) == NULL) {
@@ -105,12 +111,17 @@ main(int argc, char **argv) {
 		exit(1);
     }
     
-    /* initialisation de la file d'ecoute */
-    listen(socket_descriptor,5);
+       
+    
 
     /* attente des connexions et traitement des donnees recues */
     for(;;) {
-    
+	
+		 printf("c'est parti.\n");
+    	/* initialisation de la file d'ecoute */
+    	listen(socket_descriptor,5);
+    	
+    	
 		longueur_adresse_courante = sizeof(adresse_client_courant);
 		
 		/* adresse_client_courant sera renseigné par accept via les infos du connect */
@@ -123,14 +134,12 @@ main(int argc, char **argv) {
 			exit(1);
 		}
 		
-		if(fork() ==0) {
-		
-			/* traitement du message */
-			printf("reception d'un message.\n");
-		
-			renvoi(nouv_socket_descriptor);
-						
-			close(nouv_socket_descriptor);
+		if(fork() == 0) {
+			for(;;) {
+				renvoi(nouv_socket_descriptor);
+			}
+				
+			//close(nouv_socket_descriptor);
 		} else {
 			close(nouv_socket_descriptor);
 		}
