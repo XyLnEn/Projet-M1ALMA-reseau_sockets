@@ -3,9 +3,9 @@ Serveur à lancer avant le client
 ------------------------------------------------*/
 #include <stdlib.h>
 #include <stdio.h>
-#include <linux/types.h> 	/* pour les sockets */
+#include <linux/types.h>    /* pour les sockets */
 #include <sys/socket.h>
-#include <netdb.h> 		/* pour hostent, servent */
+#include <netdb.h> 	        /* pour hostent, servent */
 #include <string.h> 
 #include <pthread.h>		/* pour bcopy, ... */  
 #define TAILLE_MAX_NOM 256
@@ -16,6 +16,22 @@ typedef struct hostent hostent;
 typedef struct servent servent;
 
 /*------------------------------------------------------*/
+/* creation de la socket */
+int create_socket(int socket_descriptor) {
+    if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("erreur : impossible de creer la socket de connexion avec le client.");
+        exit(1);
+    }
+}
+
+/* association du socket socket_descriptor à la structure d'adresse adresse_locale */
+void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
+    if ((bind(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
+        perror("erreur : impossible de lier la socket a l'adresse de connexion.");
+        exit(1);
+    }
+}
+
 void renvoi (int sock) {
 
     char buffer[256];
@@ -24,46 +40,35 @@ void renvoi (int sock) {
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
     	return;
     
-    
 	/* traitement du message */
 	printf("reception d'un message.\n");
     printf("message lu : %s \n", buffer);
     
-    //buffer[0] = 'R';
-    //buffer[1] = 'E';
-    //buffer[longueur] = '#';
     buffer[longueur+1] ='\0';
     
     printf("message apres traitement : %s \n", buffer);
-    
     printf("renvoi du message traite.\n");
-
     
     write(sock,buffer,strlen(buffer)+1);
-    
     printf("message envoye. \n");
     
-    //close(sock);
-        
+    //close(sock);   
     return;
-    
 }
-
-/*------------------------------------------------------*/
 
 /*------------------------------------------------------*/
 main(int argc, char **argv) {
   
-    int 		socket_descriptor, 		/* descripteur de socket */
-			nouv_socket_descriptor, 	/* [nouveau] descripteur de socket */
-			longueur_adresse_courante; 	/* longueur d'adresse courante d'un client */
-    sockaddr_in 	adresse_locale, 		/* structure d'adresse locale*/
-			adresse_client_courant; 	/* adresse client courant */
-    hostent*		ptr_hote; 			/* les infos recuperees sur la machine hote */
-    servent*		ptr_service; 			/* les infos recuperees sur le service de la machine */
-    char 		machine[TAILLE_MAX_NOM+1]; 	/* nom de la machine locale */
+    int socket_descriptor, 		    /* descripteur de socket */
+		nouv_socket_descriptor,     /* [nouveau] descripteur de socket */
+		longueur_adresse_courante;  /* longueur d'adresse courante d'un client */
+    sockaddr_in adresse_locale,     /* structure d'adresse locale*/
+		adresse_client_courant;     /* adresse client courant */
+    hostent * ptr_hote;             /* les infos recuperees sur la machine hote */
+    servent * ptr_service;          /* les infos recuperees sur le service de la machine */
+    char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
     
-    gethostname(machine,TAILLE_MAX_NOM);		/* recuperation du nom de la machine */
+    gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
     
     
     /* recuperation de la structure d'adresse en utilisant le nom */
@@ -100,27 +105,22 @@ main(int argc, char **argv) {
 		   ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
     
     /* creation de la socket */
-    if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("erreur : impossible de creer la socket de connexion avec le client.");
-		exit(1);
-    }
+    socket_descriptor = create_socket(socket_descriptor);
 
     /* association du socket socket_descriptor à la structure d'adresse adresse_locale */
-    if ((bind(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
-		perror("erreur : impossible de lier la socket a l'adresse de connexion.");
-		exit(1);
-    }
+    bind_socket(socket_descriptor, adresse_locale);
     
-       
-    
-
     /* attente des connexions et traitement des donnees recues */
+
+    /*-----------------------------------------------------------
+    DEBUT DU JEU
+    -----------------------------------------------------------*/
+
     for(;;) {
 	
-		 printf("c'est parti.\n");
+		//printf("c'est parti.\n");
     	/* initialisation de la file d'ecoute */
     	listen(socket_descriptor,5);
-    	
     	
 		longueur_adresse_courante = sizeof(adresse_client_courant);
 		
@@ -137,14 +137,10 @@ main(int argc, char **argv) {
 		if(fork() == 0) {
 			for(;;) {
 				renvoi(nouv_socket_descriptor);
-			}
-				
-			//close(nouv_socket_descriptor);
+			}		
+			close(nouv_socket_descriptor);
 		} else {
 			close(nouv_socket_descriptor);
-		}
-		
-		
-    }
-    
+		}	
+    } 
 }

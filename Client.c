@@ -1,6 +1,5 @@
 /*-----------------------------------------------------------
-Client a lancer apres le serveur avec la commande :
-client <adresse-serveur> <message-a-transmettre>
+Client a lancer apres le serveur avec la commande : ./Client.exe
 ------------------------------------------------------------*/
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,6 +13,37 @@ typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
+
+/*------------------------------------------------------*/
+/* vérification du nombre d'argument */
+static void verif_arg(int argc) {
+    if (argc != 1) {
+        perror("erreur : l'executable ne prend pas d'arguments");
+        exit(1);
+    }
+}
+
+/* creation de la socket */
+static int create_socket(int socket_descriptor) {
+    if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            perror("erreur : impossible de creer la socket de connexion avec le serveur.");
+            exit(1);
+    }
+    return socket_descriptor;
+}
+
+/* tentative de connexion au serveur dont les infos sont dans adresse_locale */
+static void connect_socket(int socket_descriptor, sockaddr_in adresse_locale) {
+    if ((connect(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
+        perror("erreur : impossible de se connecter au serveur.");
+        exit(1);
+    }
+    printf("_________________________________________\n");
+    printf("|                                       |\n");
+    printf("|       SENTENCE AGAINST HUMANITY       |\n");
+    printf("|_______________________________________|\n");
+    printf("\n-->Connexion etablie avec le serveur.\n");
+}
 
 /* envoi du message vers le serveur */
 static void write_server(int socket_descriptor, const char *mesg) {
@@ -29,32 +59,22 @@ static void read_server(int socket_descriptor, char* buffer) {
 	
 	longueur = read(socket_descriptor, buffer, sizeof(buffer));
 	buffer[longueur] = '\0';
-	printf("reponse du serveur : \n");
+	printf("\nreponse du serveur : ");
 	write(1,buffer,longueur);
 }
 
+/*------------------------------------------------------*/
 int main(int argc, char **argv) {
-    int socket_descriptor; 	/* descripteur de socket */
-    sockaddr_in adresse_locale; 	/* adresse de socket local */
-    hostent *	ptr_host; 		/* info sur une machine hote */
-    servent *	ptr_service; 		/* info sur service */
-    char 	buffer[256];
-    char *	prog; 			/* nom du programme */
-    char *	host; 			/* nom de la machine distante */
-    char *	mesg; 			/* message envoyé */
-     
-    if (argc != 2) {
-	perror("usage : client <adresse-serveur>" /*<message-a-transmettre>"*/);
-	exit(1);
-    }
-   
-    prog = argv[0];
-    host = argv[1];
-    //mesg = argv[2];
+    int socket_descriptor; 	    /* descripteur de socket */
+    sockaddr_in adresse_locale; /* adresse de socket local */
+    hostent * ptr_host;         /* info sur une machine hote */
+    servent * ptr_service;      /* info sur service */
+    char buffer[256];
+    char * mesg;                /* message envoye */
+    char * host = "LOCALHOST";  /* nom de la machine distante */
     
-    printf("nom de l'executable : %s \n", prog);
-    printf("adresse du serveur  : %s \n", host);
-    //printf("message envoye      : %s \n", mesg);
+    /* verification du nombre d'argument */
+    verif_arg(argc);
     
     if ((ptr_host = gethostbyname(host)) == NULL) {
 	perror("erreur : impossible de trouver le serveur a partir de son adresse.");
@@ -84,40 +104,34 @@ int main(int argc, char **argv) {
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
+   //printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
     
+    /*-----------------------------------------------------------
+    DEBUT DU JEU
+    -----------------------------------------------------------*/
+
     /* creation de la socket */
-    if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-	perror("erreur : impossible de creer la socket de connexion avec le serveur.");
-	exit(1);
-    }
+    socket_descriptor = create_socket(socket_descriptor);
     
     /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
-    if ((connect(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
-	perror("erreur : impossible de se connecter au serveur.");
-	exit(1);
-    }
-    
-    
-    printf("\nconnexion etablie avec le serveur. \n");
-    
+    connect_socket(socket_descriptor, adresse_locale);
+     
     for(;;) {
-    	printf("envoi d'un message au serveur. \n");
+        printf("\n-----------------------------------------\n");
+    	printf("envoi d'un message au serveur : ");
     
     	/* ecrit un message de taille 100 max depuis la console */
     	fgets (mesg, 100, stdin);
     		
 		/* envoi du message vers le serveur */
-		write_server(socket_descriptor,mesg);
-		
+		write_server(socket_descriptor, mesg);
 		 
-		printf("message envoye au serveur. \n");
+		printf("message envoye au serveur.\n");
 		
 	    /* lecture de la reponse en provenance du serveur */        
-		read_server(socket_descriptor,buffer);
+		read_server(socket_descriptor, buffer);
 		
-		printf("\nfin de la reception.\n");
-		
+		printf("fin de la reception.\n");	
     }
     
     close(socket_descriptor);
