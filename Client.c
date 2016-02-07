@@ -17,8 +17,8 @@ typedef struct servent 		servent;
 /*------------------------------------------------------*/
 /* vérification du nombre d'argument */
 static void verif_arg(int argc) {
-    if (argc != 1) {
-        perror("erreur : l'executable ne prend pas d'arguments");
+    if (argc != 2) {
+        perror("usage : ./Client.exe <pseudo>");
         exit(1);
     }
 }
@@ -55,8 +55,8 @@ static void write_server(int socket_descriptor, const char *mesg) {
 
 /* lecture de la reponse en provenance du serveur */
 static void read_server(int socket_descriptor, char* buffer) {
-	int longueur; /* longueur d'un buffer utilisé */
-	
+	int longueur; /* longueur d'un buffer utilisé */   
+
 	longueur = read(socket_descriptor, buffer, sizeof(buffer));
 	buffer[longueur] = '\0';
 	printf("\nreponse du serveur : ");
@@ -72,10 +72,13 @@ int main(int argc, char **argv) {
     char buffer[256];
     char * mesg;                /* message envoye */
     char * host = "LOCALHOST";  /* nom de la machine distante */
-    
+    char * pseudo;
+
     /* verification du nombre d'argument */
     verif_arg(argc);
     
+    pseudo = argv[1];
+
     if ((ptr_host = gethostbyname(host)) == NULL) {
 	perror("erreur : impossible de trouver le serveur a partir de son adresse.");
 	exit(1);
@@ -116,6 +119,8 @@ int main(int argc, char **argv) {
     /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
     connect_socket(socket_descriptor, adresse_locale);
      
+    write_server(socket_descriptor, pseudo);
+
     for(;;) {
         printf("\n-----------------------------------------\n");
     	printf("envoi d'un message au serveur : ");

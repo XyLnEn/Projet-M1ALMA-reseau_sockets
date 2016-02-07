@@ -15,6 +15,11 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
+// typedef struct {
+//     char * pseudo;
+//     int score;
+// } Info_player;
+
 /*------------------------------------------------------*/
 /* creation de la socket */
 int create_socket(int socket_descriptor) {
@@ -46,11 +51,11 @@ void renvoi (int sock) {
     
     buffer[longueur+1] ='\0';
     
-    printf("message apres traitement : %s \n", buffer);
-    printf("renvoi du message traite.\n");
+    //printf("message apres traitement : %s \n", buffer);
+    //printf("renvoi du message traite.\n");
     
-    write(sock,buffer,strlen(buffer)+1);
-    printf("message envoye. \n");
+    //write(sock,buffer,strlen(buffer)+1);
+    //printf("message envoye. \n");
     
     //close(sock);   
     return;
@@ -68,6 +73,8 @@ main(int argc, char **argv) {
     servent * ptr_service;          /* les infos recuperees sur le service de la machine */
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
     
+    //Info_player tableau[10];
+
     gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
     
     
@@ -117,8 +124,7 @@ main(int argc, char **argv) {
     -----------------------------------------------------------*/
 
     for(;;) {
-	
-		//printf("c'est parti.\n");
+	   
     	/* initialisation de la file d'ecoute */
     	listen(socket_descriptor,5);
     	
@@ -133,7 +139,7 @@ main(int argc, char **argv) {
 			perror("erreur : impossible d'accepter la connexion avec le client.");
 			exit(1);
 		}
-		
+
 		if(fork() == 0) {
 			for(;;) {
 				renvoi(nouv_socket_descriptor);
