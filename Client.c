@@ -8,6 +8,7 @@ Client a lancer apres le serveur avec la commande : ./Client.exe
 #include <netdb.h>
 #include <string.h>
 #include <pthread.h>
+#include "Array.h"
 
 typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
@@ -134,7 +135,7 @@ int main(int argc, char **argv) {
 		printf("message envoye au serveur.\n");
 		
 	    /* lecture de la reponse en provenance du serveur */        
-		read_server(socket_descriptor, buffer);
+		//read_server(socket_descriptor, buffer);
 		
 		printf("fin de la reception.\n");	
     }

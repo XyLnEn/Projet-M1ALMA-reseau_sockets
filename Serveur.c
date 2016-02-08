@@ -7,18 +7,14 @@ Serveur à lancer avant le client
 #include <sys/socket.h>
 #include <netdb.h> 	        /* pour hostent, servent */
 #include <string.h> 
-#include <pthread.h>		/* pour bcopy, ... */  
+#include <pthread.h>		/* pour bcopy, ... */
+#include "Array.h"
 #define TAILLE_MAX_NOM 256
 
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
-
-// typedef struct {
-//     char * pseudo;
-//     int score;
-// } Info_player;
 
 /*------------------------------------------------------*/
 /* creation de la socket */
@@ -50,15 +46,19 @@ void renvoi (int sock) {
     printf("message lu : %s \n", buffer);
     
     buffer[longueur+1] ='\0';
-    
-    //printf("message apres traitement : %s \n", buffer);
-    //printf("renvoi du message traite.\n");
-    
-    //write(sock,buffer,strlen(buffer)+1);
-    //printf("message envoye. \n");
-    
-    //close(sock);   
     return;
+}
+
+int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante) {
+
+    int nouv_socket_descriptor;
+    if ((nouv_socket_descriptor = accept(socket_descriptor, 
+      (sockaddr*)(&adresse_client_courant), &longueur_adresse_courante)) < 0) {
+        perror("erreur : impossible d'accepter la connexion avec le client.");
+        exit(1);
+    }
+    return nouv_socket_descriptor;
+
 }
 
 /*------------------------------------------------------*/
@@ -73,7 +73,8 @@ main(int argc, char **argv) {
     servent * ptr_service;          /* les infos recuperees sur le service de la machine */
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
     
-    //Info_player tableau[10];
+    Array * tab;
+    initArray(tab, 10);
 
     gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
     
@@ -131,14 +132,16 @@ main(int argc, char **argv) {
 		longueur_adresse_courante = sizeof(adresse_client_courant);
 		
 		/* adresse_client_courant sera renseigné par accept via les infos du connect */
-		if ((nouv_socket_descriptor = 
-			accept(socket_descriptor, 
-			       (sockaddr*)(&adresse_client_courant),
-			       &longueur_adresse_courante))
-			 < 0) {
-			perror("erreur : impossible d'accepter la connexion avec le client.");
-			exit(1);
-		}
+		//nouv_socket_descriptor = accept_client(socket_descriptor, adresse_client_courant, longueur_adresse_courante);
+
+                if ((nouv_socket_descriptor = 
+            accept(socket_descriptor, 
+                   (sockaddr*)(&adresse_client_courant),
+                   &longueur_adresse_courante))
+             < 0) {
+            perror("erreur : impossible d'accepter la connexion avec le client.");
+            exit(1);
+        }
 
 		if(fork() == 0) {
 			for(;;) {
