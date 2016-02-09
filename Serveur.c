@@ -61,6 +61,15 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 
 }
 
+// static void * vie_connection_client(void* nouv_socket) {
+//     int nouv_socket_descriptor = (int) nouv_socket;
+//     for(;;) {
+//         renvoi(nouv_socket_descriptor);
+//     }       
+//     close(nouv_socket_descriptor);
+//     return NULL;
+// }
+
 /*------------------------------------------------------*/
 main(int argc, char **argv) {
   
@@ -73,7 +82,11 @@ main(int argc, char **argv) {
     servent * ptr_service;          /* les infos recuperees sur le service de la machine */
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
     
-    Array * tab;
+    //pour les threads
+    pthread_t thread;
+    //
+
+    Array * tab = malloc(sizeof(Array));
     initArray(tab, 10);
 
     gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
@@ -143,13 +156,29 @@ main(int argc, char **argv) {
             exit(1);
         }
 
-		if(fork() == 0) {
-			for(;;) {
-				renvoi(nouv_socket_descriptor);
-			}		
-			close(nouv_socket_descriptor);
+//////////pour l'utilisation des array/////////////////////////////////////////
+        int i;
+        Info_player element;//exemple de creation d'un element -> a faire dans le thread
+        element.socket = nouv_socket_descriptor;//a faire apres la connexion!
+        element.pseudo = "lol";
+        element.score = 0;
+        insertArray(tab, element);
+        printf("ici used = %zu \n", tab->used);//pour voir que chaque nouvelle connexion de client est vue
+        for(i = 0; i < tab->used; i++) {
+            printf("%s : %d \n", tab->array[i].pseudo, tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
+        }
+        //finalité: lors de la connexion du client on fait cela: on recup pseudo ->pseudo, socket est le socket sur lequel le joueur c'est connecté... avec ce socket on peut envoyer un msg 
+//////////////////////////////////////////////////////////////////////////////
+
+        //int ret = pthread_create(thread,NULL,vie_connection_client, (void *)nouv_socket_descriptor);
+		if( fork() == 0) {
+            for(;;) {
+                renvoi(nouv_socket_descriptor);
+            }       
+            //close(nouv_socket_descriptor);//garder?
+			
 		} else {
-			close(nouv_socket_descriptor);
-		}	
+			close(nouv_socket_descriptor);//garder?
+		}
     } 
 }

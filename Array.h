@@ -7,8 +7,10 @@
 // using namespace std;
 
 typedef struct {
+	int socket;
     char * pseudo;
     int score;
+    pthread_t assigned_thread;
 } Info_player;
 
 typedef struct {
