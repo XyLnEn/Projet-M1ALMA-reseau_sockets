@@ -17,6 +17,14 @@ typedef struct hostent hostent;
 typedef struct servent servent;
 
 /*------------------------------------------------------*/
+/* recuperation de la structure d'adresse en utilisant le nom */
+static void find_ad_serv(hostent * ptr_hote, char * machine) {
+    if ((ptr_hote = gethostbyname(machine)) == NULL) {
+        perror("erreur : impossible de trouver le serveur a partir de son adresse.");
+        exit(1);
+    }
+}
+
 /* creation de la socket */
 int create_socket(int socket_descriptor) {
     if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -91,12 +99,8 @@ main(int argc, char **argv) {
 
     gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
     
-    
     /* recuperation de la structure d'adresse en utilisant le nom */
-    if ((ptr_hote = gethostbyname(machine)) == NULL) {
-		perror("erreur : impossible de trouver le serveur a partir de son nom.");
-		exit(1);
-    }
+    find_ad_serv(ptr_hote, machine);
     
     /* initialisation de la structure adresse_locale avec les infos recuperees */			
     

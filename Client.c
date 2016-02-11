@@ -19,7 +19,14 @@ typedef struct servent 		servent;
 /* vérification du nombre d'argument */
 static void verif_arg(int argc) {
     if (argc != 2) {
-        perror("usage : ./Client.exe <pseudo>");
+        perror("Usage : ./client <pseudo> ");
+        exit(1);
+    }
+}
+/* trouver le serveur à partir de son adresse */
+static void find_ad_serv(hostent * ptr_host, char * host) {
+    if ((ptr_host = gethostbyname(host)) == NULL) {
+        perror("erreur : impossible de trouver le serveur a partir de son adresse.");
         exit(1);
     }
 }
@@ -73,17 +80,13 @@ int main(int argc, char **argv) {
     char buffer[256];
     char * mesg;                /* message envoye */
     char * host = "LOCALHOST";  /* nom de la machine distante */
-    char * pseudo;
+    char * pseudo = argv[1];
 
     /* verification du nombre d'argument */
     verif_arg(argc);
-    
-    pseudo = argv[1];
 
-    if ((ptr_host = gethostbyname(host)) == NULL) {
-	perror("erreur : impossible de trouver le serveur a partir de son adresse.");
-	exit(1);
-    }
+    /* trouver le serveur à partir de son adresse */
+    find_ad_serv(ptr_host, host);
     
     /* copie caractere par caractere des infos de ptr_host vers adresse_locale */
     bcopy((char*)ptr_host->h_addr, (char*)&adresse_locale.sin_addr, ptr_host->h_length);
