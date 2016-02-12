@@ -7,7 +7,7 @@ Client a lancer apres le serveur avec la commande : ./Client.exe
 #include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
-#include <pthread.h>
+// #include <pthread.h>
 #include "Array.h"
 
 typedef struct sockaddr 	sockaddr;
@@ -18,8 +18,8 @@ typedef struct servent 		servent;
 /*------------------------------------------------------*/
 /* vérification du nombre d'argument */
 static void verif_arg(int argc) {
-    if (argc != 2) {
-        perror("Usage : ./client <pseudo> ");
+    if (argc != 1) {
+        perror("Usage : ./client");
         exit(1);
     }
 }
@@ -65,15 +65,15 @@ static void write_server(int socket_descriptor, const char *mesg) {
 static void write_sentence(int socket_descriptor) {
     printf("quelle est la phrase que vous souhaiter envoyer?");
     char* mesg = NULL;
-    fgets (mesg, 100, stdin);
-    while ((strstr(mesg, "___") == NULL) && (strstr(mesg, "~") == null)) {
+    fgets (mesg, 195, stdin);
+    while ((strstr(mesg, "___") == NULL) && (strstr(mesg, "~") == NULL)) {
         printf("le message doit contenir le mot ___ pour signifier la partie a completer");
         printf("il ne peut pas contenir le charactere ~");
         mesg = NULL;
-        fgets (mesg, 100, stdin);
+        fgets (mesg, 195, stdin);
     }
 
-    char str[105];
+    char str[200];
     strcpy(str, "0001~");
     strcat(str, mesg);
 
@@ -90,6 +90,18 @@ static void read_server(int socket_descriptor, char* buffer) {
 	write(1,buffer,longueur);
 }
 
+static void crea_pseudo(int socket_descriptor) {
+    char* pseudo;
+    printf("\n-----------------------------------------\n");
+    printf("\nEcrivez votre pseudo : ");
+    fgets (pseudo, 30, stdin);
+    char str[35];
+    strcpy(str, "0000~");
+    strcat(str, pseudo);
+    write_server(socket_descriptor, str);
+    return;
+}
+
 /*------------------------------------------------------*/
 int main(int argc, char **argv) {
     int socket_descriptor; 	    /* descripteur de socket */
@@ -99,7 +111,7 @@ int main(int argc, char **argv) {
     char buffer[256];
     char * mesg;                /* message envoye */
     char * host = "LOCALHOST";  /* nom de la machine distante */
-    char * pseudo = argv[1];
+    char * pseudo;
 
     /* verification du nombre d'argument */
     verif_arg(argc);
@@ -141,8 +153,7 @@ int main(int argc, char **argv) {
     
     /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
     connect_socket(socket_descriptor, adresse_locale);
-     
-    write_server(socket_descriptor, pseudo);
+    crea_pseudo(socket_descriptor); 
 
     for(;;) {
         printf("\n-----------------------------------------\n");

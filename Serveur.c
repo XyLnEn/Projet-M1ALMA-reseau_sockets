@@ -18,12 +18,12 @@ typedef struct servent servent;
 
 /*------------------------------------------------------*/
 /* recuperation de la structure d'adresse en utilisant le nom */
-static void find_ad_serv(hostent * ptr_hote, char * machine) {
-    if ((ptr_hote = gethostbyname(machine)) == NULL) {
-        perror("erreur : impossible de trouver le serveur a partir de son adresse.");
-        exit(1);
-    }
-}
+// static void find_ad_serv(hostent * ptr_hote, char * machine) {
+//     if ((ptr_hote = gethostbyname(machine)) == NULL) {
+//         perror("erreur : impossible de trouver le serveur a partir de son adresse.");
+//         exit(1);
+//     }
+// }
 
 /* creation de la socket */
 int create_socket(int socket_descriptor) {
@@ -41,6 +41,27 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
     }
 }
 
+char * lecture(int sock) {
+
+    char * buffer;
+    int longueur;
+   
+    if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) {
+     
+        printf("ici");
+        return NULL;
+    }
+    
+    //traitement du message 
+    printf("reception d'un message : %s \n", buffer);
+   
+    buffer[longueur+1] ='\0';//attention erreur potentielle
+    printf("%s",buffer);
+    return buffer;
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 void renvoi (int sock) {
 
     char buffer[256];
@@ -49,13 +70,14 @@ void renvoi (int sock) {
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
     	return;
     
-	/* traitement du message */
+	 //traitement du message 
 	printf("reception d'un message.\n");
     printf("message lu : %s \n", buffer);
     
     buffer[longueur+1] ='\0';
     return;
 }
+///////////////////////////////////////////////////////////////////////////
 
 int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante) {
 
@@ -80,6 +102,9 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 
 /*------------------------------------------------------*/
 main(int argc, char **argv) {
+
+    int i;
+    Info_player element;//exemple de creation d'un element -> a faire dans le thread
   
     int socket_descriptor, 		    /* descripteur de socket */
 		nouv_socket_descriptor,     /* [nouveau] descripteur de socket */
@@ -89,9 +114,10 @@ main(int argc, char **argv) {
     hostent * ptr_hote;             /* les infos recuperees sur la machine hote */
     servent * ptr_service;          /* les infos recuperees sur le service de la machine */
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
-    
+    char * pseudo;
+
     //pour les threads
-    pthread_t thread;
+    //pthread_t thread;
     //
 
     Array * tab = malloc(sizeof(Array));
@@ -100,7 +126,11 @@ main(int argc, char **argv) {
     gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
     
     /* recuperation de la structure d'adresse en utilisant le nom */
-    find_ad_serv(ptr_hote, machine);
+    //find_ad_serv(ptr_hote, machine);
+    if ((ptr_hote = gethostbyname(machine)) == NULL) {
+        perror("erreur : impossible de trouver le serveur a partir de son adresse.");
+        exit(1);
+    }
     
     /* initialisation de la structure adresse_locale avec les infos recuperees */			
     
@@ -159,12 +189,14 @@ main(int argc, char **argv) {
             perror("erreur : impossible d'accepter la connexion avec le client.");
             exit(1);
         }
+        //**************************************************************************************************//
 
+        pseudo = lecture(socket_descriptor);
+        printf("ici : %s",pseudo);
 //////////pour l'utilisation des array/////////////////////////////////////////
-        int i;
-        Info_player element;//exemple de creation d'un element -> a faire dans le thread
+        
         element.socket = nouv_socket_descriptor;//a faire apres la connexion!
-        element.pseudo = "lol";
+        element.pseudo = pseudo;
         element.score = 0;
         insertArray(tab, element);
         printf("ici used = %zu \n", tab->used);//pour voir que chaque nouvelle connexion de client est vue
@@ -174,6 +206,7 @@ main(int argc, char **argv) {
         //finalité: lors de la connexion du client on fait cela: on recup pseudo ->pseudo, socket est le socket sur lequel le joueur c'est connecté... avec ce socket on peut envoyer un msg 
 //////////////////////////////////////////////////////////////////////////////
 
+//**********************************************************************************************************//
         //int ret = pthread_create(thread,NULL,vie_connection_client, (void *)nouv_socket_descriptor);
 		if( fork() == 0) {
             for(;;) {
