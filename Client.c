@@ -61,6 +61,25 @@ static void write_server(int socket_descriptor, const char *mesg) {
 	}
 }
 
+/* genere la phrase a trou avec verification de validité */
+static void write_sentence(int socket_descriptor) {
+    printf("quelle est la phrase que vous souhaiter envoyer?");
+    char* mesg = NULL;
+    fgets (mesg, 100, stdin);
+    while ((strstr(mesg, "___") == NULL) && (strstr(mesg, "~") == null)) {
+        printf("le message doit contenir le mot ___ pour signifier la partie a completer");
+        printf("il ne peut pas contenir le charactere ~");
+        mesg = NULL;
+        fgets (mesg, 100, stdin);
+    }
+
+    char str[105];
+    strcpy(str, "0001~");
+    strcat(str, mesg);
+
+    write_server(socket_descriptor,str);
+}
+
 /* lecture de la reponse en provenance du serveur */
 static void read_server(int socket_descriptor, char* buffer) {
 	int longueur; /* longueur d'un buffer utilisé */   
