@@ -90,16 +90,16 @@ static void read_server(int socket_descriptor, char* buffer) {
 	write(1,buffer,longueur);
 }
 
-static void crea_pseudo(int socket_descriptor) {
+char * crea_pseudo(/*int socket_descriptor*/) {
     char* pseudo;
+    char * temp;
     printf("\n-----------------------------------------\n");
     printf("\nEcrivez votre pseudo : ");
-    fgets (pseudo, 30, stdin);
-    char str[35];
-    strcpy(str, "0000~");
-    strcat(str, pseudo);
-    write_server(socket_descriptor, str);
-    return;
+    fgets (temp, 30, stdin);
+    strcpy(pseudo, "0000~");
+    strcat(pseudo, temp);
+    //write_server(socket_descriptor, str);
+    return pseudo;
 }
 
 /*------------------------------------------------------*/
@@ -116,8 +116,14 @@ int main(int argc, char **argv) {
     /* verification du nombre d'argument */
     verif_arg(argc);
 
+
     /* trouver le serveur à partir de son adresse */
-    find_ad_serv(ptr_host, host);
+    ///////////find_ad_serv(ptr_host, host);
+
+    if ((ptr_host = gethostbyname(host)) == NULL) {
+    perror("erreur : impossible de trouver le serveur a partir de son adresse.");
+    exit(1);
+    }
     
     /* copie caractere par caractere des infos de ptr_host vers adresse_locale */
     bcopy((char*)ptr_host->h_addr, (char*)&adresse_locale.sin_addr, ptr_host->h_length);
@@ -153,7 +159,17 @@ int main(int argc, char **argv) {
     
     /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
     connect_socket(socket_descriptor, adresse_locale);
-    crea_pseudo(socket_descriptor); 
+
+    //impossible de placer cela dans une fonction?!?! j'abandonne.
+    char * temp;
+    printf("\n-----------------------------------------\n");
+    printf("\nEcrivez votre pseudo : ");
+    fgets (temp, 30, stdin);
+    strcpy(pseudo, "0000~");
+    strcat(pseudo, temp);
+    strcat(pseudo, "\n");
+    printf("\n%s", pseudo);
+    write_server(socket_descriptor, pseudo);
 
     for(;;) {
         printf("\n-----------------------------------------\n");

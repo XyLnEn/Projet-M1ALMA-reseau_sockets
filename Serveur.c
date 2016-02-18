@@ -43,20 +43,18 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 
 char * lecture(int sock) {
 
-    char * buffer;
+    //char *buffer = malloc(256*sizeof(char));
+    char buffer[256];
     int longueur;
    
-    if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) {
-     
-        printf("ici");
-        return NULL;
+    if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0){ 
+        return buffer;
     }
     
     //traitement du message 
     printf("reception d'un message : %s \n", buffer);
    
     buffer[longueur+1] ='\0';//attention erreur potentielle
-    printf("%s",buffer);
     return buffer;
 }
 
@@ -116,6 +114,9 @@ main(int argc, char **argv) {
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
     char * pseudo;
 
+    ///////////////////////////////
+    char * pch;
+    ///////////////////////////////
     //pour les threads
     //pthread_t thread;
     //
@@ -191,26 +192,32 @@ main(int argc, char **argv) {
         }
         //**************************************************************************************************//
 
-        pseudo = lecture(socket_descriptor);
-        printf("ici : %s",pseudo);
-//////////pour l'utilisation des array/////////////////////////////////////////
+        // pseudo = lecture(socket_descriptor);
+        // printf("ici : %s",pseudo);
         
-        element.socket = nouv_socket_descriptor;//a faire apres la connexion!
-        element.pseudo = pseudo;
-        element.score = 0;
-        insertArray(tab, element);
-        printf("ici used = %zu \n", tab->used);//pour voir que chaque nouvelle connexion de client est vue
-        for(i = 0; i < tab->used; i++) {
-            printf("%s : %d \n", tab->array[i].pseudo, tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
-        }
-        //finalité: lors de la connexion du client on fait cela: on recup pseudo ->pseudo, socket est le socket sur lequel le joueur c'est connecté... avec ce socket on peut envoyer un msg 
-//////////////////////////////////////////////////////////////////////////////
+
+
 
 //**********************************************************************************************************//
         //int ret = pthread_create(thread,NULL,vie_connection_client, (void *)nouv_socket_descriptor);
 		if( fork() == 0) {
             for(;;) {
-                renvoi(nouv_socket_descriptor);
+                pseudo = lecture(nouv_socket_descriptor);
+                // renvoi(nouv_socket_descriptor);
+
+//////////pour l'utilisation des array/////////////////////////////////////////
+                if ((pseudo[3] == '0') && (pseudo[4] == '~')){
+                    element.socket = nouv_socket_descriptor;//a faire apres la connexion!
+                    element.pseudo = pseudo;
+                    element.score = 0;
+                    insertArray(tab, element);
+                    printf("ici used = %zu \n", tab->used);//pour voir que chaque nouvelle connexion de client est vue
+                    for(i = 0; i < tab->used; i++) {
+                        printf("%s : %d \n", tab->array[i].pseudo, tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
+                    }
+                }
+                //finalité: lors de la connexion du client on fait cela: on recup pseudo ->pseudo, socket est le socket sur lequel le joueur c'est connecté... avec ce socket on peut envoyer un msg 
+//////////////////////////////////////////////////////////////////////////////                
             }       
             //close(nouv_socket_descriptor);//garder?
 			
