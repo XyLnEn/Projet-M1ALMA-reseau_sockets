@@ -44,17 +44,24 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 char * lecture(int sock) {
 
     //char *buffer = malloc(256*sizeof(char));
-    char buffer[256];
+    static char buffer[256];
     int longueur;
    
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0){ 
-        return buffer;
+        return "";
     }
     
     //traitement du message 
-    printf("reception d'un message : %s \n", buffer);
-   
-    buffer[longueur+1] ='\0';//attention erreur potentielle
+    
+    int i;
+    for(i = 0; i < longueur; i++) {
+        if(buffer[i] == '\n') {
+            buffer[i] = '\0';
+        }
+    }
+    // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
+
+    printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
     return buffer;
 }
 
@@ -102,7 +109,7 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 main(int argc, char **argv) {
 
     int i;
-    Info_player element;//exemple de creation d'un element -> a faire dans le thread
+    Info_player * element;//exemple de creation d'un element -> a faire dans le thread
   
     int socket_descriptor, 		    /* descripteur de socket */
 		nouv_socket_descriptor,     /* [nouveau] descripteur de socket */
@@ -116,6 +123,7 @@ main(int argc, char **argv) {
 
     ///////////////////////////////
     char * pch;
+    char * temp;
     ///////////////////////////////
     //pour les threads
     //pthread_t thread;
@@ -203,14 +211,18 @@ main(int argc, char **argv) {
 		if( fork() == 0) {
             for(;;) {
                 pseudo = lecture(nouv_socket_descriptor);
+                // pch = strtok (pseudo,"~");
+                // printf("code : %s -> %s",pseudo, pch);
+
                 // renvoi(nouv_socket_descriptor);
 
 //////////pour l'utilisation des array/////////////////////////////////////////
                 if ((pseudo[3] == '0') && (pseudo[4] == '~')){
-                    element.socket = nouv_socket_descriptor;//a faire apres la connexion!
-                    element.pseudo = pseudo;
-                    element.score = 0;
-                    insertArray(tab, element);
+                    element = (Info_player*)malloc(sizeof(Info_player));
+                    element->socket = nouv_socket_descriptor;//a faire apres la connexion!
+                    element->pseudo = pseudo;
+                    element->score = 0;
+                    insertArray(tab, *element);
                     printf("ici used = %zu \n", tab->used);//pour voir que chaque nouvelle connexion de client est vue
                     for(i = 0; i < tab->used; i++) {
                         printf("%s : %d \n", tab->array[i].pseudo, tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
