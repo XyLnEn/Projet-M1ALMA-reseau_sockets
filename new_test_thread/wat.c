@@ -69,7 +69,7 @@ char * lecture(int sock) {
     }
     // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
 
-    printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
+    printf("reception d'un message de taille %d : %s\n", longueur, buffer);
     return buffer;
 }
 
@@ -119,35 +119,51 @@ static void * fn_store (void * p_data)
    	return NULL;
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////
+void decode(char * test, int nouv_socket_descriptor) {
+
+    if (strstr(test,"~")) {
+        Info_player element;//exemple de creation d'un element -> a faire dans le thread
+        int i;
+
+        char * code;
+        char * phrase;
+        code = malloc(5*sizeof(char));
+        code = strtok(test,"~");
+        printf("%s|\n",code);
+        phrase = malloc(256*sizeof(char));
+        phrase = strtok(NULL,"~");
+        printf("%s|\n",phrase);
+
+        if ((code[3] == '0')){
+            // element = (Info_player)malloc(sizeof(Info_player));
+            element.socket = nouv_socket_descriptor;//a faire apres la connexion!
+            element.pseudo = phrase;
+            element.score = 0;
+            insertArray(store.tab, element);
+            printf("ici used = %zu \n", store.tab->used);//pour voir que chaque nouvelle connexion de client est vue
+            for(i = 0; i < store.tab->used; i++) {
+                printf("%s : %d \n", store.tab->array[i].pseudo, store.tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
+            }
+        }
+    }
+    
+    return;
+}
+/////////////////////////////////////////////////////////////////////////////////////
+
 /* Fonction pour les threads des clients. */
 static void * fn_clients (void * p_data)
 {
 	char * pseudo;
 	int nouv_socket_descriptor = (int) p_data;
-   	Info_player * element;//exemple de creation d'un element -> a faire dans le thread
-  	int i;
  
    while (1)
    {
 
         pseudo = lecture(nouv_socket_descriptor);
-        // pch = strtok (pseudo,"~");
-        // printf("code : %s -> %s",pseudo, pch);
-
-        // renvoi(nouv_socket_descriptor);
-
-//////////pour l'utilisation des array/////////////////////////////////////////
-        if ((pseudo[3] == '0') && (pseudo[4] == '~')){
-            element = (Info_player*)malloc(sizeof(Info_player));
-            element->socket = nouv_socket_descriptor;//a faire apres la connexion!
-            element->pseudo = pseudo;
-            element->score = 0;
-            insertArray(store.tab, *element);
-            printf("ici used = %zu \n", store.tab->used);//pour voir que chaque nouvelle connexion de client est vue
-            for(i = 0; i < store.tab->used; i++) {
-                printf("%s : %d \n", store.tab->array[i].pseudo, store.tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
-            }
-		}
+        decode(pseudo,nouv_socket_descriptor);
    }
  
    return NULL;
@@ -169,11 +185,13 @@ int main (void)
 
 
 	int i = 0;
-	int ret = 0;
+
+    int thread_pere = 0;
+    int thread_fils = 0;
  
 	/* Creation du thread du magasin. */
 	printf ("Creation du thread du magasin !\n");
-	ret = pthread_create (
+	thread_pere = pthread_create (
 		& store.thread_store, NULL,
 		fn_store, NULL
 	);
@@ -247,22 +265,22 @@ int main (void)
         }
 
 		/* Creation des threads des clients si celui du magasin a reussi. */
-		if (! ret)
+		if (! thread_pere)
 		{
-			ret = pthread_create (
+			thread_fils = pthread_create (
 			& store.thread_clients [i], NULL,
 			fn_clients, (void *) nouv_socket_descriptor
 		 	);
 
-			if (ret)
+			if (thread_fils)
 			{
-				fprintf (stderr, "%s", strerror (ret));
+				fprintf (stderr, "%s", strerror (thread_fils));
 			}
 		}
-		else
-		{
-			fprintf (stderr, "%s", strerror (ret));
-		}
+		// else
+		// {
+		// 	fprintf (stderr, "%s", strerror (ret));
+		// }
 
 		//close(nouv_socket_descriptor);//garder?
     } 
