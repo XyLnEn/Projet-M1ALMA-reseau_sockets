@@ -1,13 +1,41 @@
 Pour le serveur :
 1 - choisir un leader
-	-message reçu: thread client correspondant bloque tabPhrases, le vide et ecrit sa phrase (1 elem du coup); il modifie variable etatJeu et libere la structure.
-2 - les autres threads clients (grace a pthread_cond_broadcast) savent que la phrase est arrivée et ils l'envoient a leur client.
-3/1 - lorsqu'un client repond, le thread de ce client bloque la structure et insere son couple (phrase, nbthread) puis le libere
-3/2 - le thread-leader attend 40 sec avant de tenter de bloquer la structure
+		-> modif tableau clients: add booléen pour signaler si leader ou non.
+	- blocage structure, choix leader(change booleen) et deblocage
+	- chaque thread client regarde s'il est leader: si oui mode 1 sinon mode 2 (de comportement)
+	mode 2 attend sur etatJeu (pthread_cond_wait()) , mode 1 previent son leader.
+	- message reçu: thread Leader correspondant bloque structure, vide tabPhrases et ecrit sa phrase (1 elem du coup); il modifie variable etatJeu (ou il appelle pthread_cond_signal()) et libere la structure.
 
-4 - le thread-leader envoie la liste des phrases au leader
-4-1 - les autres threads ne peuvent plus ecrire car bloqué mais Ils peuvent utiliser une methode pour recuperer toutes les phrases (comme leader quoi!)
+2 - les autres threads clients (grace a pthread_cond_broadcast()) savent que la phrase est arrivée et ils l'envoient a leur client (blocage-copie-envoi-deblocage).
 
-5 - thread-leader incremente score du gagnant, inscrit dans une variable {nom gagnant, phrase gagnant, score} et change etatJeu a fin puis il debloque.
 
-6 - tout les thread client envoient la variable a leur client, thread-pere attend 10s et recommence.
+3/1 - lorsqu'un client repond, le thread de ce client bloque la structure et insere son couple (phrase, nbthread) dans tabPhrases puis le libere et il attend sur etatJeu (pthread_cond_wait()) .
+
+3/2 - le thread-leader attend 40 sec avant de tenter de bloquer la structure.
+
+
+4 - le thread-leader envoie la liste des phrases au leader et signale les thread-client (pthread_cond_broadcast()).
+
+4-1 - les autres threads ne peuvent plus ecrire car bloqué mais grace a signal ils savent qu'ils peuvent utiliser une methode pour recuperer toutes les phrases (comme leader quoi!) donc ils le font et previennent leur client puis ils attendent sur etatJeu (pthread_cond_wait()).
+
+
+5 - thread-leader incremente score du gagnant, inscrit dans une variable {nom gagnant, phrase gagnant, score} et change etatJeu (pthread_cond_broadcast()) puis il debloque.
+	-> les threads retardataires peuvent se debloquer, plus d'impact sur resultat.
+
+
+
+6 - tout les thread client envoient la variable a leur client, thread-pere attend 10s et recommence (blocage structure).
+
+
+////////////////////////////////////
+
+apres chaque message, verif etatJeu: si valeur fausse (?) on retourne au debut 
+	-> difference var etatJeu et debutJeu
+
+
+A faire: ajout dans la structure 
+d'un array de struct <int,string> tabPhrases ou int = no de thread, 
+d'un mutex, 
+d'un pthread_cond_t etatJeu,
+d'un pthread_cond_t debutJeu,
+
