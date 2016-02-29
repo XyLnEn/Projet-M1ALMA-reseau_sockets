@@ -15,7 +15,7 @@ typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
-/*------------------------------------------------------*/
+/////////////////////////////////////////////////////////////////////////////////////
 /* vérification du nombre d'argument */
 static void verif_arg(int argc) {
     if (argc != 1) {
@@ -23,6 +23,8 @@ static void verif_arg(int argc) {
         exit(1);
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////
 /* trouver le serveur à partir de son adresse */
 static void find_ad_serv(hostent * ptr_host, char * host) {
     if ((ptr_host = gethostbyname(host)) == NULL) {
@@ -31,6 +33,7 @@ static void find_ad_serv(hostent * ptr_host, char * host) {
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
 /* creation de la socket */
 static int create_socket(int socket_descriptor) {
     if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -40,6 +43,7 @@ static int create_socket(int socket_descriptor) {
     return socket_descriptor;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
 /* tentative de connexion au serveur dont les infos sont dans adresse_locale */
 static void connect_socket(int socket_descriptor, sockaddr_in adresse_locale) {
     if ((connect(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
@@ -61,6 +65,7 @@ static void write_server(int socket_descriptor, const char *mesg) {
 	}
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
 /* genere la phrase a trou avec verification de validité */
 static void write_sentence(int socket_descriptor) {
     printf("quelle est la phrase que vous souhaiter envoyer?");
@@ -80,6 +85,7 @@ static void write_sentence(int socket_descriptor) {
     write_server(socket_descriptor,str);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
 /* lecture de la reponse en provenance du serveur */
 static void read_server(int socket_descriptor, char* buffer) {
 	int longueur; /* longueur d'un buffer utilisé */   
@@ -102,7 +108,7 @@ char * crea_pseudo(/*int socket_descriptor*/) {
     return pseudo;
 }
 
-/*------------------------------------------------------*/
+/////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
     int socket_descriptor; 	    /* descripteur de socket */
     sockaddr_in adresse_locale; /* adresse de socket local */
