@@ -10,6 +10,8 @@ Serveur à lancer avant le client avec la commande : ./Serveur.exe
 #include <pthread.h>		/* pour bcopy, ... */
 #include "Array.h"
 #define TAILLE_MAX_NOM 256
+#define NB_CLIENTS 20
+#define ATTENTE_DEBUT_PARTIE 20
 
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
@@ -22,7 +24,8 @@ typedef struct
    Array * tab;
  
    pthread_t thread_store;
-   pthread_t thread_clients [80];
+   pthread_t thread_clients [NB_CLIENTS];
+   pthread_mutex_t mutex_stock;
 }
 store_t;
  
@@ -110,10 +113,17 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 /* Fonction pour le thread du magasin. */
 static void * fn_store (void * p_data) {
 
-	initArray(store.tab, 10);
-	while (1)
-	{
-      	//a faire: gestion des threads fils
+	initArray(store.tab, 5);
+    sleep (ATTENTE_DEBUT_PARTIE);
+
+	while (1) {
+      	 /* Debut de la zone protegee. */
+      pthread_mutex_lock (& store.mutex_stock);
+ 
+      choix_leader(store.tab);
+ 
+      /* Fin de la zone protegee. */
+      pthread_mutex_unlock (& store.mutex_stock);
 	}
    	return NULL;
 }
@@ -140,10 +150,11 @@ void decode(char * test, int nouv_socket_descriptor) {
             element.socket = nouv_socket_descriptor;//a faire apres la connexion!
             element.pseudo = phrase;
             element.score = 0;
+            element.leader = 0;
             insertArray(store.tab, element);
             printf("ici used = %zu \n", store.tab->used);//pour voir que chaque nouvelle connexion de client est vue
             for(i = 0; i < store.tab->used; i++) {
-                printf("%s : %d \n", store.tab->array[i].pseudo, store.tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
+                printf("leader: %s : %d \n", store.tab->array[i].pseudo, store.tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
             }
         }
     }
@@ -170,6 +181,7 @@ static void * fn_clients (void * p_data)
 int main (void)
 {
 	store.tab = malloc(sizeof(Array));
+    store.mutex_stock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;;
 
     int socket_descriptor, 		    /* descripteur de socket */
 		nouv_socket_descriptor,     /* [nouveau] descripteur de socket */

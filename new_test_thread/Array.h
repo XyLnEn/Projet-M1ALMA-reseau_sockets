@@ -9,6 +9,7 @@ typedef struct {
 	int socket;
    char * pseudo;
    int score;
+   int leader;
    pthread_t assigned_thread;
 } Info_player;
 
