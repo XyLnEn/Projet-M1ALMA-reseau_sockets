@@ -120,7 +120,7 @@ static void * fn_store (void * p_data) {
       	 /* Debut de la zone protegee. */
       pthread_mutex_lock (& store.mutex_stock);
  
-      choix_leader(store.tab);
+      //choix_leader(store.tab);
  
       /* Fin de la zone protegee. */
       pthread_mutex_unlock (& store.mutex_stock);
@@ -128,16 +128,27 @@ static void * fn_store (void * p_data) {
    	return NULL;
 }
 
+//genere la concat de code~phrase proprement
+char * crea_phrase(char * mot, char * code) {
+    char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
+    memcpy(fin, code, strlen(code));
+    memcpy(fin + strlen(code), "~", 1);
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
+    return fin;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////
-void decode(char * test, int nouv_socket_descriptor) {
+char * decode(char * test, int nouv_socket_descriptor) {
 
     if (strstr(test,"~")) {
+        printf("%s recu\n", test);
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
         int i;
 
         char * code;
         char * phrase;
+        char * reponse;
         code = malloc(5*sizeof(char));
         code = strtok(test,"~");
         printf("%s|\n",code);
@@ -156,22 +167,28 @@ void decode(char * test, int nouv_socket_descriptor) {
             for(i = 0; i < store.tab->used; i++) {
                 printf("leader: %s : %d \n", store.tab->array[i].pseudo, store.tab->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
             }
+            reponse = crea_phrase(phrase,mot);
+            return reponse;
         }
     }
-    return;
+    return "";
 }
 /////////////////////////////////////////////////////////////////////////////////////
 /* Fonction pour les threads des clients. */
 static void * fn_clients (void * p_data)
 {
 	char * pseudo;
+    char * temp;
 	int nouv_socket_descriptor = (int) p_data;
  
    while (1)
    {
 
         pseudo = lecture(nouv_socket_descriptor);
-        decode(pseudo,nouv_socket_descriptor);
+        temp = decode(pseudo,nouv_socket_descriptor);
+        sleep(10);
+        write(nouv_socket_descriptor,temp,sizeof(temp));
+
    }
  
    return NULL;

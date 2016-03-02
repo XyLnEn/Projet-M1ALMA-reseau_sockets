@@ -59,10 +59,18 @@ static void connect_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 
 /* envoi du message vers le serveur */
 static void write_server(int socket_descriptor, const char *mesg) {
-	if ((write(socket_descriptor, mesg, strlen(mesg))) < 0) {
+	if ((write(socket_descriptor, mesg, strlen(mesg))) <= 0) {
 		perror("erreur : impossible d'ecrire le message destine au serveur.");
 		exit(1);
 	}
+}
+
+char * crea_phrase(char * mot, char * code) {
+    char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
+    memcpy(fin, code, strlen(code));
+    memcpy(fin + strlen(code), "~", 1);
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot));
+    return fin;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -96,16 +104,31 @@ static void read_server(int socket_descriptor, char* buffer) {
 	write(1,buffer,longueur);
 }
 
-char * crea_pseudo(/*int socket_descriptor*/) {
-    char* pseudo;
-    char * temp;
-    printf("\n-----------------------------------------\n");
-    printf("\nEcrivez votre pseudo : ");
-    fgets (temp, 30, stdin);
-    strcpy(pseudo, "0000~");
-    strcat(pseudo, temp);
-    //write_server(socket_descriptor, str);
-    return pseudo;
+void vie_client(int socket_descriptor) {
+    /* initialisation de la file d'ecoute */
+    //listen(socket_descriptor,5);
+    char buffer[500];
+    int longueur; 
+    int i;
+   
+    if ((longueur = read(socket_descriptor, buffer, sizeof(buffer))) <= 0){
+        printf("ayy");
+        return ;
+    } else {
+        //traitement du message
+        for(i = 0; i < longueur; i++) {
+            if(buffer[i] == '\n') {
+                buffer[i] = '\0';
+            }
+        }
+        // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
+
+        printf("reception d'un message de taille %d : %s\n", longueur, buffer);
+        /* envoi du message vers le serveur */
+        write_server(socket_descriptor, buffer);
+        return ;
+    }
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -167,14 +190,23 @@ int main(int argc, char **argv) {
     connect_socket(socket_descriptor, adresse_locale);
 
     //impossible de placer cela dans une fonction?!?! j'abandonne.
-    char * temp;
+    char * temp = malloc(100*sizeof(char));
+    size_t len = 0;
     printf("\n-----------------------------------------\n");
     printf("\nEcrivez votre pseudo : ");
-    fgets (temp, 30, stdin);
-    strcpy(pseudo, "0000~");
-    strcat(pseudo, temp);
-    strcat(pseudo, "\n");
-    printf("\n%s", pseudo);
+    getline(&temp, &len, stdin);
+
+    // strcpy(pseudo, "0000~");
+    // printf("\n%s", pseudo);
+    // strcat(pseudo, temp);
+    // printf("\n%s", pseudo);
+    // strcat(pseudo, "\n");
+    // printf("\n%s", pseudo);
+
+    char * code = malloc(5*sizeof(char));
+    code = "0000";
+    pseudo = crea_phrase(temp,code);
+    printf("%s|\n",pseudo);
     write_server(socket_descriptor, pseudo);
 
     for(;;) {
@@ -182,17 +214,21 @@ int main(int argc, char **argv) {
     	printf("envoi d'un message au serveur : ");
     
     	/* ecrit un message de taille 100 max depuis la console */
-    	fgets (mesg, 100, stdin);
+    	//fgets (mesg, 100, stdin);
     		
+
+        //////////////////////////////////////////////////////////////////
 		/* envoi du message vers le serveur */
-		write_server(socket_descriptor, mesg);
+		// write_server(socket_descriptor, mesg);
 		 
-		printf("message envoye au serveur.\n");
+		// printf("message envoye au serveur.\n");
 		
-	    /* lecture de la reponse en provenance du serveur */        
-		//read_server(socket_descriptor, buffer);
+	 //    /* lecture de la reponse en provenance du serveur */        
+		// //read_server(socket_descriptor, buffer);
 		
-		printf("fin de la reception.\n");	
+		// printf("fin de la reception.\n");
+        //////////////////////////////////////////////////////////////////
+        vie_client(socket_descriptor);
     }
     
     close(socket_descriptor);
