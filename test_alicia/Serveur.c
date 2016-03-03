@@ -25,7 +25,7 @@ typedef struct
  
    pthread_t thread_serveur;
    pthread_t thread_clients [NB_CLIENTS_MAX];
-   pthread_mutex_t mutex_stock;
+   //pthread_mutex_t mutex_stock;
 }
 serveur_t;
  
@@ -56,7 +56,7 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* réception d'un message envoyé par le serveur */
-char * lecture(int sock) {
+char * reception(int sock) {
     //char *buffer = malloc(256*sizeof(char));
     static char buffer[256];
     int longueur;
@@ -79,7 +79,29 @@ char * lecture(int sock) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-void renvoi (int sock) {
+/* réception d'un message envoyé par le serveur */
+char * recep_pseudo(int sock) {
+    //char *buffer = malloc(256*sizeof(char));
+    static char buffer[50];
+    int longueur;
+   
+    if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0){ 
+        return "";
+    }
+    
+    //traitement du message 
+    int i;
+    for(i = 0; i < longueur; i++) {
+        if(buffer[i] == '\n') {
+            buffer[i] = '\0';
+        }
+    }
+
+    return buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+void envoi (int sock) {
 
     char buffer[256];
     int longueur;
@@ -96,21 +118,7 @@ void renvoi (int sock) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* connexion d'un nouveau client */
-int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante) {
-
-    int nouv_socket_descriptor;
-    if ((nouv_socket_descriptor = accept(socket_descriptor, 
-      (sockaddr*)(&adresse_client_courant), &longueur_adresse_courante)) < 0) {
-        perror("erreur : impossible d'accepter la connexion avec le client.");
-        exit(1);
-    }
-    return nouv_socket_descriptor;
-
-}
-
-/////////////////////////////////////////////////////////////////////////////////////
-void decode(char * test, int nouv_socket_descriptor) {
+void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
     if (strstr(test,"~")) {
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
@@ -120,10 +128,10 @@ void decode(char * test, int nouv_socket_descriptor) {
         char * phrase;
         code = malloc(5*sizeof(char));
         code = strtok(test,"~");
-        printf("%s|\n",code);
+        //printf("%s\n",code);
         phrase = malloc(256*sizeof(char));
         phrase = strtok(NULL,"~");
-        printf("%s|\n",phrase);
+        //printf("%s\n",phrase);
 
         if ((code[3] == '0')){
             // element = (Info_player)malloc(sizeof(Info_player));
@@ -131,34 +139,51 @@ void decode(char * test, int nouv_socket_descriptor) {
             element.pseudo = phrase;
             element.score = 0;
             element.leader = 0;
-            insertArray(serveur.tabClients, element);
-            printf("ici used = %zu \n", serveur.tabClients->used);//pour voir que chaque nouvelle connexion de client est vue
-            for(i = 0; i < serveur.tabClients->used; i++) {
-                printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
-            }
+            insertArray(tabClients, element);
+            // printf("ici used = %zu \n", tabClients->used);//pour voir que chaque nouvelle connexion de client est vue
+            // for(i = 0; i < tabClients->used; i++) {
+            //     printf("leader: %s : %d \n", tabClients->array[i].pseudo, tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
+            // }
         }
     }
     return;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* Fonction pour le thread du magasin. */
-static void * fn_serveur (void * p_data) {
+/* connexion d'un nouveau client */
+int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, 
+    int longueur_adresse_courante, Array * tabClients, char * pseudo) {
 
-    initArray(serveur.tabClients, 5);
-    sleep (ATTENTE_DEBUT_PARTIE);
-
-    while (1) {
-         /* Debut de la zone protegee. */
-      pthread_mutex_lock (& serveur.mutex_stock);
- 
-      //choix_leader(serveur.tabClients);
- 
-      /* Fin de la zone protegee. */
-      pthread_mutex_unlock (& serveur.mutex_stock);
+    int nouv_socket_descriptor;
+    if ((nouv_socket_descriptor = accept(socket_descriptor, 
+      (sockaddr*)(&adresse_client_courant), &longueur_adresse_courante)) < 0) {
+        perror("erreur : impossible d'accepter la connexion avec le client.");
+        exit(1);
+    } else {
+        pseudo = reception(socket_descriptor);
+        decode(pseudo,socket_descriptor, tabClients);
     }
-    return NULL;
+    return nouv_socket_descriptor;
 }
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* Fonction pour le thread du magasin. */
+// static void * fn_serveur (void * p_data) {
+
+//     //initArray(serveur.tabClients, 5);
+//    // sleep (ATTENTE_DEBUT_PARTIE);
+
+//     while (1) {
+//          /* Debut de la zone protegee. */
+//       //pthread_mutex_lock (& serveur.mutex_stock);
+ 
+//       //choix_leader(serveur.tabClients);
+ 
+//       /* Fin de la zone protegee. */
+//       //pthread_mutex_unlock (& serveur.mutex_stock);
+//     }
+//     return NULL;
+// }
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* Fonction pour les threads des clients. */
@@ -170,33 +195,44 @@ static void * fn_clients (void * p_data)
    while (1)
    {
 
-        pseudo = lecture(nouv_socket_descriptor);
-        decode(pseudo,nouv_socket_descriptor);
+        pseudo = reception(nouv_socket_descriptor);
+        decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
    }
  
    return NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-// void choix_leader(Array tabClients) {
-//     if(tabClients.used == 0) {
-//         perror("erreur : choix leader impossible");
-//         exit(1);
-//     } else {
-
-//     }
-//     return;
-// }
+void choix_leader(Array * tabClients) {
+    if(tabClients->used == 0) {
+        perror("erreur : choix leader impossible");
+        exit(1);
+    } else if(tabClients->used == 1) {
+        tabClients->array[0].leader = 1;
+    } else if(tabClients->array[tabClients->used].leader == 1) {
+        tabClients->array[tabClients->used].leader == 0;
+        tabClients->array[0].leader == 1;
+    }else {
+        int i = 0;
+        for (i = 0; i < tabClients->used - 1; ++i) {
+           if(tabClients->array[i].leader == 1) {
+                tabClients->array[i].leader = 0;
+                tabClients->array[i+1].leader = 1;
+                return;
+           } 
+        }
+    }
+    return;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
 void affich_clients(Array * tabClients) {
     printf("pseudo --- score --- leader\n");
     int i = 0;
-    for (i = 0; i < tabClients->used; ++i)
-    {
-        printf("%s --- %d --- %d \n", 
-             tabClients->array->pseudo, tabClients->array->score,
-             tabClients->array->leader);
+    for (i = 0; i < tabClients->used; ++i) {
+        printf("%s --- %d --- %d --- %d\n", 
+             tabClients->array[i].pseudo, tabClients->array[i].score,
+             tabClients->array[i].leader, tabClients->array[i].socket);
     }
     return;
 }
@@ -204,8 +240,8 @@ void affich_clients(Array * tabClients) {
 /////////////////////////////////////////////////////////////////////////////////////
 int main (void)
 {
-	serveur.tabClients = malloc(sizeof(Array));
-    serveur.mutex_stock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;;
+	 serveur.tabClients = malloc(sizeof(Array));
+ //    serveur.mutex_stock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;;
 
     int socket_descriptor, 		    /* descripteur de socket */
 		nouv_socket_descriptor,     /* [nouveau] descripteur de socket */
@@ -216,15 +252,20 @@ int main (void)
     servent * ptr_service;          /* les infos recuperees sur le service de la machine */
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
 
+    //Array * tabClients = malloc(sizeof(Array));
+    initArray(serveur.tabClients, 5);
+
+    char * pseudo = "";
 
 	int i = 0;
+    int ret = 0;
     int thread_pere = 0;
     int thread_fils = 0;
  
 	/* Creation du thread du serveur. */
-	printf ("Creation du thread du serveur !\n");
-	thread_pere = pthread_create (
-		& serveur.thread_serveur, NULL, fn_serveur, NULL);
+	// printf ("Creation du thread du serveur !\n");
+	// thread_pere = pthread_create (
+	// 	& serveur.thread_serveur, NULL, fn_serveur, NULL);
 
 
 //----------------------------------------------------------------------------------------------------------
@@ -260,8 +301,8 @@ int main (void)
     /* SOLUTION 2 : utiliser un nouveau numero de port */
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
-    
-    printf("numero de port pour la connexion au serveur : %d \n", 
+    printf("\n-----------------------------------------\n");
+    printf("\n-->Numero de port pour la connexion au serveur : %d \n", 
 		   ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
     
     /* creation de la socket */
@@ -271,6 +312,8 @@ int main (void)
     bind_socket(socket_descriptor, adresse_locale);
     
     /* attente des connexions et traitement des donnees recues */
+    printf("-->Serveur lancé.\n");
+    printf("\n-----------------------------------------\n");
 
     /*-----------------------------------------------------------
     DEBUT DU JEU
@@ -282,19 +325,24 @@ int main (void)
     	listen(socket_descriptor,5);
     	
 		longueur_adresse_courante = sizeof(adresse_client_courant);
-        
 		
 		/* adresse_client_courant sera renseigné par accept via les infos du connect */
-		//nouv_socket_descriptor = accept_client(socket_descriptor, adresse_client_courant, longueur_adresse_courante);
+		nouv_socket_descriptor = accept_client(socket_descriptor, adresse_client_courant,
+         longueur_adresse_courante, serveur.tabClients, pseudo);
 
-                if ((nouv_socket_descriptor = 
-            accept(socket_descriptor, 
-                   (sockaddr*)(&adresse_client_courant),
-                   &longueur_adresse_courante))
-             < 0) {
-            perror("erreur : impossible d'accepter la connexion avec le client.");
-            exit(1);
-        }
+        //         if ((nouv_socket_descriptor = 
+        //     accept(socket_descriptor, 
+        //            (sockaddr*)(&adresse_client_courant),
+        //            &longueur_adresse_courante))
+        //      < 0) {
+        //     perror("erreur : impossible d'accepter la connexion avec le client.");
+        //     exit(1);
+        // }
+
+        //pseudo = reception(nouv_socket_descriptor);
+        //decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
+        
+        choix_leader(serveur.tabClients);
         affich_clients(serveur.tabClients);
 		/* Creation des threads des clients si celui du magasin a reussi. */
 		if (! thread_pere)
@@ -309,10 +357,10 @@ int main (void)
 				fprintf (stderr, "%s", strerror (thread_fils));
 			}
 		}
-		// else
-		// {
-		// 	fprintf (stderr, "%s", strerror (ret));
-		// }
+		else
+		{
+			fprintf (stderr, "%s", strerror (ret));
+		}
 
 		//close(nouv_socket_descriptor);//garder?
     } 

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
- 
+
  
 #define INITIAL_STOCK   20
 #define NB_CLIENTS      5
@@ -15,19 +15,12 @@ typedef struct
  
    pthread_t thread_store;
    pthread_t thread_clients [NB_CLIENTS];
- 
-   pthread_mutex_t mutex_stock;
-   pthread_cond_t cond_stock;
-   pthread_cond_t cond_clients;
 }
 store_t;
  
 static store_t store =
 {
    .stock = INITIAL_STOCK,
-   .mutex_stock = PTHREAD_MUTEX_INITIALIZER,
-   .cond_stock = PTHREAD_COND_INITIALIZER,
-   .cond_clients = PTHREAD_COND_INITIALIZER,
 };
  
  
@@ -48,20 +41,11 @@ static void * fn_store (void * p_data)
 {
    while (1)
    {
-      /* Debut de la zone protegee. */
-      //pthread_mutex_lock (& store.mutex_stock);
-      pthread_mutex_lock (& store.mutex_stock);
-      printf("1///////////////////////////////////////////////////////////////////\n");
-      pthread_cond_wait (& store.cond_stock, & store.mutex_stock);
-      printf("2///////////////////////////////////////////////////////////////////\n");
-      
-      store.stock = INITIAL_STOCK;
-      printf ("Remplissage du stock de %d articles !\n", store.stock);
-      
-      
-      pthread_cond_signal (& store.cond_clients);
-      pthread_mutex_unlock (& store.mutex_stock);
-      /* Fin de la zone protegee. */
+      if (store.stock <= 0)
+      {
+         store.stock = INITIAL_STOCK;
+         printf ("Remplissage du stock de %d articles !\n", store.stock);
+      }
    }
  
    return NULL;
@@ -77,26 +61,13 @@ static void * fn_clients (void * p_data)
    {
       int val = get_random (6);
  
- 
       sleep (get_random (3));
- 
-      /* Debut de la zone protegee. */
-      pthread_mutex_lock (& store.mutex_stock);
- 
-      if (val > store.stock)
-      {
-         pthread_cond_signal (& store.cond_stock);
-         pthread_cond_wait (& store.cond_clients, & store.mutex_stock);
-      }
  
       store.stock = store.stock - val;
       printf (
          "Client %d prend %d du stock, reste %d en stock !\n",
          nb, val, store.stock
       );
- 
-      pthread_mutex_unlock (& store.mutex_stock);
-      /* Fin de la zone protegee. */
    }
  
    return NULL;
@@ -109,14 +80,14 @@ int main (void)
    int ret = 0;
  
  
-   /* Creation des threads. */
+   /* Creation du thread du magasin. */
    printf ("Creation du thread du magasin !\n");
    ret = pthread_create (
       & store.thread_store, NULL,
       fn_store, NULL
    );
  
-   /* Creation des threads des clients si celui du magasinn a reussi. */
+   /* Creation des threads des clients si celui du magasin a reussi. */
    if (! ret)
    {
       printf ("Creation des threads clients !\n");
@@ -124,7 +95,8 @@ int main (void)
       {
          ret = pthread_create (
             & store.thread_clients [i], NULL,
-            fn_clients, (void *) i);
+            fn_clients, (void *) i
+         );
  
          if (ret)
          {
