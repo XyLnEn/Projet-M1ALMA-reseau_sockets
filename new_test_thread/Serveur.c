@@ -56,7 +56,7 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* réception d'un message envoyé par le serveur */
-char * lecture(int sock) {
+char * reception(int sock) {
     //char *buffer = malloc(256*sizeof(char));
     static char buffer[256];
     int longueur;
@@ -96,28 +96,51 @@ void renvoi (int sock) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* connexion d'un nouveau client */
-int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante) {
-
-    int nouv_socket_descriptor;
-    if ((nouv_socket_descriptor = accept(socket_descriptor, 
-      (sockaddr*)(&adresse_client_courant), &longueur_adresse_courante)) < 0) {
-        perror("erreur : impossible d'accepter la connexion avec le client.");
+void choix_leader(Array * tabClients) {
+    if(tabClients->used == 0) {
+        perror("erreur : choix leader impossible");
         exit(1);
+    } else if(tabClients->used == 1) {
+        tabClients->array[0].leader = 1;
+    } else if(tabClients->array[tabClients->used].leader == 1) {
+        tabClients->array[tabClients->used].leader == 0;
+        tabClients->array[0].leader == 1;
+    }else {
+        int i = 0;
+        for (i = 0; i < tabClients->used - 1; ++i) {
+           if(tabClients->array[i].leader == 1) {
+                tabClients->array[i].leader = 0;
+                tabClients->array[i+1].leader = 1;
+                return;
+           } 
+        }
     }
-    return nouv_socket_descriptor;
-
+    return;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-void decode(char * test, int nouv_socket_descriptor) {
+//genere la concat de code~phrase proprement
+char * crea_phrase(char * mot, char * code) {
+    char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
+    memcpy(fin, code, strlen(code));
+    memcpy(fin + strlen(code), "~", 1);
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
+    return fin;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
+
 
     if (strstr(test,"~")) {
+        printf("%s recu\n", test);
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
         int i;
 
         char * code;
         char * phrase;
+        char * reponse;
         code = malloc(5*sizeof(char));
         code = strtok(test,"~");
         printf("%s|\n",code);
@@ -136,7 +159,39 @@ void decode(char * test, int nouv_socket_descriptor) {
             for(i = 0; i < serveur.tabClients->used; i++) {
                 printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
             }
+            //reponse = crea_phrase(phrase,mot);
+            return reponse;
         }
+    }
+    return "";
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* connexion d'un nouveau client */
+int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante,
+    Array * tabClients, char * pseudo) {
+
+    int nouv_socket_descriptor;
+    if ((nouv_socket_descriptor = accept(socket_descriptor, 
+      (sockaddr*)(&adresse_client_courant), &longueur_adresse_courante)) < 0) {
+        perror("erreur : impossible d'accepter la connexion avec le client.");
+        exit(1);
+    } else {
+        pseudo = reception(socket_descriptor);
+        pseudo = decode(pseudo,socket_descriptor, tabClients);
+    }
+    return nouv_socket_descriptor;
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+void affich_clients(Array * tabClients) {
+    printf("pseudo --- score --- leader\n");
+    int i = 0;
+    for (i = 0; i < tabClients->used; ++i) {
+        printf("%s --- %d --- %d --- %d\n", 
+             tabClients->array[i].pseudo, tabClients->array[i].score,
+             tabClients->array[i].leader, tabClients->array[i].socket);
     }
     return;
 }
@@ -152,7 +207,8 @@ static void * fn_serveur (void * p_data) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
  
-      //choix_leader(serveur.tabClients);
+      choix_leader(serveur.tabClients);
+      affich_clients(serveur.tabClients);
  
       /* Fin de la zone protegee. */
       pthread_mutex_unlock (& serveur.mutex_stock);
@@ -164,43 +220,22 @@ static void * fn_serveur (void * p_data) {
 /* Fonction pour les threads des clients. */
 static void * fn_clients (void * p_data)
 {
-	char * pseudo;
-	int nouv_socket_descriptor = (int) p_data;
+    char * pseudo;
+    char * temp;
+    int nouv_socket_descriptor = (int) p_data;
  
    while (1)
    {
 
-        pseudo = lecture(nouv_socket_descriptor);
-        decode(pseudo,nouv_socket_descriptor);
+        pseudo = reception(nouv_socket_descriptor);
+        temp = decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
+        sleep(10);
+        write(nouv_socket_descriptor,temp,sizeof(temp));
+
    }
  
    return NULL;
 }
-
-/////////////////////////////////////////////////////////////////////////////////////
-// void choix_leader(Array tabClients) {
-//     if(tabClients.used == 0) {
-//         perror("erreur : choix leader impossible");
-//         exit(1);
-//     } else {
-
-//     }
-//     return;
-// }
-
-/////////////////////////////////////////////////////////////////////////////////////
-void affich_clients(Array * tabClients) {
-    printf("pseudo --- score --- leader\n");
-    int i = 0;
-    for (i = 0; i < tabClients->used; ++i)
-    {
-        printf("%s --- %d --- %d \n", 
-             tabClients->array->pseudo, tabClients->array->score,
-             tabClients->array->leader);
-    }
-    return;
-}
-
 /////////////////////////////////////////////////////////////////////////////////////
 int main (void)
 {
@@ -215,16 +250,16 @@ int main (void)
     hostent * ptr_hote;             /* les infos recuperees sur la machine hote */
     servent * ptr_service;          /* les infos recuperees sur le service de la machine */
     char machine[TAILLE_MAX_NOM+1]; /* nom de la machine locale */
-
+    char * pseudo = "";
 
 	int i = 0;
     int thread_pere = 0;
     int thread_fils = 0;
  
 	/* Creation du thread du serveur. */
-	printf ("Creation du thread du serveur !\n");
-	thread_pere = pthread_create (
-		& serveur.thread_serveur, NULL, fn_serveur, NULL);
+	// printf ("Creation du thread du serveur !\n");
+	// thread_pere = pthread_create (
+	// 	& serveur.thread_serveur, NULL, fn_serveur, NULL);
 
 
 //----------------------------------------------------------------------------------------------------------
@@ -261,8 +296,10 @@ int main (void)
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("numero de port pour la connexion au serveur : %d \n", 
-		   ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
+    printf("\n-----------------------------------------\n");
+    printf("\n-->Numero de port pour la connexion au serveur : %d \n", 
+           ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
+    
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
@@ -295,7 +332,9 @@ int main (void)
             perror("erreur : impossible d'accepter la connexion avec le client.");
             exit(1);
         }
-        affich_clients(serveur.tabClients);
+
+        
+
 		/* Creation des threads des clients si celui du magasin a reussi. */
 		if (! thread_pere)
 		{
@@ -309,6 +348,10 @@ int main (void)
 				fprintf (stderr, "%s", strerror (thread_fils));
 			}
 		}
+
+      //   choix_leader(serveur.tabClients);
+      // affich_clients(serveur.tabClients);
+        
 		// else
 		// {
 		// 	fprintf (stderr, "%s", strerror (ret));
