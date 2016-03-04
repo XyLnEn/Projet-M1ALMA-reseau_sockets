@@ -159,7 +159,7 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             for(i = 0; i < serveur.tabClients->used; i++) {
                 printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
             }
-            //reponse = crea_phrase(phrase,mot);
+            reponse = crea_phrase(phrase,code);
             return reponse;
         }
     }
@@ -168,18 +168,14 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* connexion d'un nouveau client */
-int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante,
-    Array * tabClients, char * pseudo) {
+int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int longueur_adresse_courante) {
 
     int nouv_socket_descriptor;
     if ((nouv_socket_descriptor = accept(socket_descriptor, 
       (sockaddr*)(&adresse_client_courant), &longueur_adresse_courante)) < 0) {
         perror("erreur : impossible d'accepter la connexion avec le client.");
         exit(1);
-    } else {
-        pseudo = reception(socket_descriptor);
-        pseudo = decode(pseudo,socket_descriptor, tabClients);
-    }
+    } 
     return nouv_socket_descriptor;
 
 }
@@ -198,17 +194,20 @@ void affich_clients(Array * tabClients) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* Fonction pour le thread du magasin. */
-static void * fn_serveur (void * p_data) {
+static void * mj_main (void * p_data) {
 
     initArray(serveur.tabClients, 5);
     sleep (ATTENTE_DEBUT_PARTIE);
 
+    while(serveur.tabClients->used < 3) {
+        sleep(1);
+    }
+    choix_leader(serveur.tabClients);
+    affich_clients(serveur.tabClients);
+
     while (1) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
- 
-      choix_leader(serveur.tabClients);
-      affich_clients(serveur.tabClients);
  
       /* Fin de la zone protegee. */
       pthread_mutex_unlock (& serveur.mutex_stock);
@@ -218,7 +217,7 @@ static void * fn_serveur (void * p_data) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* Fonction pour les threads des clients. */
-static void * fn_clients (void * p_data)
+static void * joueur_main (void * p_data)
 {
     char * pseudo;
     char * temp;
@@ -253,14 +252,13 @@ int main (void)
     char * pseudo = "";
 
 	int i = 0;
-    int thread_pere = 0;
-    int thread_fils = 0;
+    int thread_Maitre_Jeu = 0;
+    int thread_Liaison_Joueur = 0;
  
 	/* Creation du thread du serveur. */
-	// printf ("Creation du thread du serveur !\n");
-	// thread_pere = pthread_create (
-	// 	& serveur.thread_serveur, NULL, fn_serveur, NULL);
-
+	printf ("Creation du thread du serveur !\n");
+	thread_Maitre_Jeu = pthread_create (
+		& serveur.thread_serveur, NULL, mj_main, NULL);
 
 //----------------------------------------------------------------------------------------------------------
 	gethostname(machine,TAILLE_MAX_NOM); /* recuperation du nom de la machine */
@@ -291,6 +289,7 @@ int main (void)
     }
     adresse_locale.sin_port = htons(ptr_service->s_port);
     */
+
     /*-----------------------------------------------------------*/
     /* SOLUTION 2 : utiliser un nouveau numero de port */
     adresse_locale.sin_port = htons(5000);
@@ -299,7 +298,6 @@ int main (void)
     printf("\n-----------------------------------------\n");
     printf("\n-->Numero de port pour la connexion au serveur : %d \n", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
@@ -319,38 +317,36 @@ int main (void)
     	listen(socket_descriptor,5);
     	
 		longueur_adresse_courante = sizeof(adresse_client_courant);
-        
 		
 		/* adresse_client_courant sera renseigné par accept via les infos du connect */
-		//nouv_socket_descriptor = accept_client(socket_descriptor, adresse_client_courant, longueur_adresse_courante);
+		nouv_socket_descriptor = accept_client(socket_descriptor, adresse_client_courant, longueur_adresse_courante);
 
-                if ((nouv_socket_descriptor = 
-            accept(socket_descriptor, 
-                   (sockaddr*)(&adresse_client_courant),
-                   &longueur_adresse_courante))
-             < 0) {
-            perror("erreur : impossible d'accepter la connexion avec le client.");
-            exit(1);
-        }
+        //         if ((nouv_socket_descriptor = 
+        //     accept(socket_descriptor, 
+        //            (sockaddr*)(&adresse_client_courant),
+        //            &longueur_adresse_courante))
+        //      < 0) {
+        //     perror("erreur : impossible d'accepter la connexion avec le client.");
+        //     exit(1);
+        // }
 
-        
-
-		/* Creation des threads des clients si celui du magasin a reussi. */
-		if (! thread_pere)
+		/* Creation des threads des joueurs si celui du maitre du jeu a reussi. */
+		if (! thread_Maitre_Jeu)
 		{
-			thread_fils = pthread_create (
-			& serveur.thread_clients [i], NULL,
-			fn_clients, (void *) nouv_socket_descriptor
-		 	);
 
-			if (thread_fils)
+			thread_Liaison_Joueur = pthread_create (
+			& serveur.thread_clients [i], NULL,
+			joueur_main, (void *) nouv_socket_descriptor
+		 	);
+            i++;
+
+			if (thread_Liaison_Joueur)
 			{
-				fprintf (stderr, "%s", strerror (thread_fils));
+				fprintf (stderr, "%s", strerror (thread_Liaison_Joueur));
 			}
 		}
 
-      //   choix_leader(serveur.tabClients);
-      // affich_clients(serveur.tabClients);
+    
         
 		// else
 		// {
