@@ -15,6 +15,8 @@ typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
+int isleader = 0;
+
 /////////////////////////////////////////////////////////////////////////////////////
 /* vérification du nombre d'argument */
 static void verif_arg(int argc) {
@@ -74,35 +76,114 @@ char * crea_phrase(char * mot, char * code) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* genere la phrase a trou avec verification de validité */
-static void write_sentence(int socket_descriptor) {
-    printf("quelle est la phrase que vous souhaiter envoyer?");
-    char* mesg = NULL;
-    fgets (mesg, 195, stdin);
-    while ((strstr(mesg, "___") == NULL) && (strstr(mesg, "~") == NULL)) {
-        printf("le message doit contenir le mot ___ pour signifier la partie a completer");
-        printf("il ne peut pas contenir le charactere ~");
-        mesg = NULL;
-        fgets (mesg, 195, stdin);
+/* complete la phrase a trou */
+void complete_sentence(int socket_descriptor, char * phrase) {
+    int i = 0;
+    char * snippet = malloc(50* sizeof(char));
+    char * oldReponse = malloc(strlen(phrase)* sizeof(char));
+    char * tamponDeb = malloc(200* sizeof(char));
+    char * tamponFin = malloc(200* sizeof(char));
+    char * reponse = malloc(200* sizeof(char));
+    printf("le leader vous demande de completer cette phrase: %s\n", phrase);
+    while(i == 0){
+        oldReponse = phrase;
+        printf("par quoi voulez-vous remplacer le blanc (_) dans %s?\n", phrase);
+        fgets (snippet, 50, stdin);
+        printf("1 %s\n",snippet);
+
+        tamponDeb = strtok(oldReponse,"_");
+        printf("2 %s\n",tamponDeb);
+        memcpy(reponse, tamponDeb, strlen(tamponDeb));
+        printf("3 %s\n",reponse);
+        memcpy(reponse + strlen(tamponDeb), snippet, strlen(snippet));
+        printf("4 %s\n",reponse);
+        tamponFin = strtok(NULL,"_");
+        printf("2 %s\n",tamponFin);
+        memcpy(reponse + strlen(tamponDeb) + strlen(snippet), tamponFin, strlen(tamponFin));
+
+        printf("la phrase %s vous convient-elle? oui/non\n", reponse);
+        fgets (snippet, 50, stdin);
+        if(snippet == "oui") {
+            i = 1;
+        }
     }
 
-    char str[200];
-    strcpy(str, "0001~");
-    strcat(str, mesg);
+    char * str = malloc( (strlen(reponse) + 5) *sizeof(char));
+    str = crea_phrase(reponse,"0002");
 
     write_server(socket_descriptor,str);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* lecture de la reponse en provenance du serveur */
-static void read_server(int socket_descriptor, char* buffer) {
-	int longueur; /* longueur d'un buffer utilisé */   
+/* genere la phrase a trou avec verification de validité */
+void write_sentence(int socket_descriptor) {
+    printf("vous etes leader, quelle phrase envoyer? (format XXX_XX) : ");
+    char* mesg = malloc(200*sizeof(char));
+    fgets (mesg, 195, stdin);
+    while ((strstr(mesg, "_") == NULL) && (strstr(mesg, "~") == NULL)) {
+        printf("le message doit contenir le mot _ pour signifier la partie a completer\n");
+        printf("il ne peut pas contenir le charactere ~ ni _\n");
+        fgets (mesg, 195, stdin);
+    }
 
-	longueur = read(socket_descriptor, buffer, sizeof(buffer));
-	buffer[longueur] = '\0';
-	printf("\nreponse du serveur : ");
-	write(1,buffer,longueur);
+    char * str = malloc( (strlen(mesg) + 5) *sizeof(char));
+    str = crea_phrase(mesg,"0001");
+
+    write_server(socket_descriptor,str);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* conversion code to int */
+int convert_code(char * s) {
+    return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* reponse au serveur qui demande une phrase a trou */
+void reaction_message(int socket_descriptor, char * message) {
+
+        char * code;
+        char * phrase;
+        char * reponse;
+        code = malloc(5*sizeof(char));
+        code = strtok(message,"~");
+        // printf("%s|\n",code);
+        phrase = malloc(256*sizeof(char));
+        phrase = strtok(NULL,"~");
+        // printf("%s|\n",phrase);
+
+        //reaction
+        switch(convert_code(code)){
+            case 0 :
+                printf("wat");
+                break;
+            case 1 :
+                complete_sentence(socket_descriptor , phrase);
+                break;
+            case 2 :
+                printf("phrase reçu: %s\n",phrase);
+                break;
+            case 3 :
+
+                write_sentence(socket_descriptor);
+                break;
+
+        }
+        return;
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* lecture de la reponse en provenance du serveur */
+// static void read_server(int socket_descriptor, char* buffer) {
+// 	int longueur; /* longueur d'un buffer utilisé */   
+
+// 	longueur = read(socket_descriptor, buffer, sizeof(buffer));
+// 	buffer[longueur] = '\0';
+// 	printf("\nreponse du serveur : ");
+// 	write(1,buffer,longueur);
+// }
 
 void vie_client(int socket_descriptor) {
     /* initialisation de la file d'ecoute */
@@ -122,15 +203,16 @@ void vie_client(int socket_descriptor) {
                 buffer[i] = '\0';
             }
         }
-        // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
-
         printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
-        /* envoi du message vers le serveur */
-        write_server(socket_descriptor, buffer);
+
+        reaction_message(socket_descriptor, buffer);
+
         return ;
     }
 
 }
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {

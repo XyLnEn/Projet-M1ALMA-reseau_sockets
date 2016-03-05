@@ -162,7 +162,7 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             // }
 
 
-            reponse = crea_phrase(phrase,code);
+            reponse = crea_phrase(phrase,"0003");
             // printf("phrase reconstruite: %s|\n", reponse);
             return reponse;
         }
