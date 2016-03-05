@@ -69,7 +69,7 @@ char * crea_phrase(char * mot, char * code) {
     char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
     memcpy(fin, code, strlen(code));
     memcpy(fin + strlen(code), "~", 1);
-    memcpy(fin + strlen(code) + 1, mot, strlen(mot));
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
     return fin;
 }
 
@@ -107,7 +107,7 @@ static void read_server(int socket_descriptor, char* buffer) {
 void vie_client(int socket_descriptor) {
     /* initialisation de la file d'ecoute */
     //listen(socket_descriptor,5);
-    char buffer[500];
+    char buffer[250];
     int longueur; 
     int i;
    
@@ -115,6 +115,7 @@ void vie_client(int socket_descriptor) {
         printf("ayy");
         return ;
     } else {
+        printf("avant le clean: %d : %s|\n", longueur, buffer);
         //traitement du message
         for(i = 0; i < longueur; i++) {
             if(buffer[i] == '\n') {
@@ -123,7 +124,7 @@ void vie_client(int socket_descriptor) {
         }
         // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
 
-        printf("reception d'un message de taille %d : %s\n", longueur, buffer);
+        printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
         /* envoi du message vers le serveur */
         write_server(socket_descriptor, buffer);
         return ;

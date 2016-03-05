@@ -121,10 +121,11 @@ void choix_leader(Array * tabClients) {
 /////////////////////////////////////////////////////////////////////////////////////
 //genere la concat de code~phrase proprement
 char * crea_phrase(char * mot, char * code) {
-    char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
+
+    char * fin = malloc((strlen(mot) + strlen(code)+1) * sizeof(char));
     memcpy(fin, code, strlen(code));
     memcpy(fin + strlen(code), "~", 1);
-    memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot)+1);
     return fin;
 }
 
@@ -134,20 +135,20 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
 
     if (strstr(test,"~")) {
-        printf("%s recu\n", test);
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
         int i;
 
         char * code;
         char * phrase;
-        char * reponse;
         code = malloc(5*sizeof(char));
         code = strtok(test,"~");
-        printf("%s|\n",code);
+        // printf("%s|\n",code);
         phrase = malloc(256*sizeof(char));
         phrase = strtok(NULL,"~");
-        printf("%s|\n",phrase);
+        // printf("%s|\n",phrase);
+        char * reponse = malloc((strlen(code) + 1 + strlen(phrase)) * sizeof(char));
 
+        //on regarde ici le code et on reagit en consequence
         if ((code[3] == '0')){
             // element = (Info_player)malloc(sizeof(Info_player));
             element.socket = nouv_socket_descriptor;//a faire apres la connexion!
@@ -155,13 +156,18 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             element.score = 0;
             element.leader = 0;
             insertArray(serveur.tabClients, element);
-            printf("ici used = %zu \n", serveur.tabClients->used);//pour voir que chaque nouvelle connexion de client est vue
-            for(i = 0; i < serveur.tabClients->used; i++) {
-                printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
-            }
+            // printf("ici used = %zu \n", serveur.tabClients->used);//pour voir que chaque nouvelle connexion de client est vue
+            // for(i = 0; i < serveur.tabClients->used; i++) {
+            //     printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
+            // }
+
+
             reponse = crea_phrase(phrase,code);
+            // printf("phrase reconstruite: %s|\n", reponse);
             return reponse;
         }
+
+
     }
     return "";
 }
@@ -228,8 +234,8 @@ static void * joueur_main (void * p_data)
 
         pseudo = reception(nouv_socket_descriptor);
         temp = decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
-        sleep(10);
-        write(nouv_socket_descriptor,temp,sizeof(temp));
+        sleep(5);
+        write(nouv_socket_descriptor,temp,strlen(temp));
 
    }
  
