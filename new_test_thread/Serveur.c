@@ -57,8 +57,8 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 /////////////////////////////////////////////////////////////////////////////////////
 /* réception d'un message envoyé par le serveur */
 char * reception(int sock) {
-    //char *buffer = malloc(256*sizeof(char));
-    static char buffer[256];
+    //char *buffer = malloc(256*sizeof(char));//laisser en tableau sinon envoi 8 lettres par 8
+    static char buffer[256] = "";
     int longueur;
    
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0){ 
@@ -74,7 +74,7 @@ char * reception(int sock) {
     }
     // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
 
-    printf("reception d'un message de taille %d : %s\n", longueur, buffer);
+    printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
     return buffer;
 }
 
@@ -162,8 +162,8 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             // }
 
 
-            reponse = crea_phrase(phrase,"0003");
-            // printf("phrase reconstruite: %s|\n", reponse);
+            reponse = crea_phrase(phrase,"0003");//a changer pour envoyer autre type de messages
+
             return reponse;
         }
 

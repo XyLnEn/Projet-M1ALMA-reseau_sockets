@@ -43,6 +43,10 @@ d'un pthread_cond_t debutJeu,
 
 gcc Array.c Serveur.c -o Serveur.exe -lpthread; gcc Client.c -o Client.exe
 
+$$$$$$$$$$$$$$$$$$$$$$ Alicia $$$$$$$$$$$$$$$$$$$$$$$$
+si tu vois cela, j'ai un probleme avec le choix de la phrase gagnante coté client: il faudrais que tu m'envoie un truc du genre "0002~NB|message" pour que je sache comment recuperer le nb correspondant.
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 3 types: 0000~X = pseudo
 0001~X = phrase a completer
 0002~X = phrase completee

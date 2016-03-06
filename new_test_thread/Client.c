@@ -10,12 +10,24 @@ Client a lancer apres le serveur avec la commande : ./Client.exe
 // #include <pthread.h>
 #include "Array.h"
 
+typedef struct {
+    char * tabPhrases[10];
+    int nbPhrases;
+} listePhrases;
+
+
+
 typedef struct sockaddr 	sockaddr;
 typedef struct sockaddr_in 	sockaddr_in;
 typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
+
+ //variable globales
+listePhrases tabReponses;
 int isleader = 0;
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* vérification du nombre d'argument */
@@ -71,8 +83,14 @@ char * crea_phrase(char * mot, char * code) {
     char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
     memcpy(fin, code, strlen(code));
     memcpy(fin + strlen(code), "~", 1);
-    memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot));
     return fin;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* conversion code to int */
+int convert_code(char * s) {
+    return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +121,7 @@ void complete_sentence(int socket_descriptor, char * phrase) {
 
         printf("la phrase %s vous convient-elle? oui/non\n", reponse);
         fgets (snippet, 50, stdin);
-        if(snippet == "oui") {
+        if(snippet == "oui") { //BUG
             i = 1;
         }
     }
@@ -112,6 +130,36 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     str = crea_phrase(reponse,"0002");
 
     write_server(socket_descriptor,str);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* recupere la liste des phrases reçu et choisit le gagnant */
+void choose_answer(int socket_descriptor) {
+    if(tabReponses.nbPhrases == 0) {
+        printf("oups");
+    } else {
+        int i;
+        char * number = malloc(5*sizeof(char));
+        char * words = malloc(200*sizeof(char));
+        char * index[10];
+        for(i = 0; i < tabReponses.nbPhrases; i++) {
+            index[i] = malloc(2*sizeof(char));
+            printf("%s\n",tabReponses.tabPhrases[i]);
+            number = tabReponses.tabPhrases[i];
+            index[i] = strtok(number,"|");
+            printf("%s\n",index[i]);
+            words = strtok(NULL,"|");
+            printf("phrase no %d : %s\n",i,words);
+        }
+        printf("quel est le gagnant? : ");
+        fgets (number, 5, stdin);
+        i = number[0] - '0';
+        char * str = malloc( (strlen(index[i]) + 5) *sizeof(char));
+        str = crea_phrase(index[i],"0004");
+        write_server(socket_descriptor,str);
+
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -132,11 +180,7 @@ void write_sentence(int socket_descriptor) {
     write_server(socket_descriptor,str);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
-/* conversion code to int */
-int convert_code(char * s) {
-    return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
-}
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* reponse au serveur qui demande une phrase a trou */
@@ -154,18 +198,28 @@ void reaction_message(int socket_descriptor, char * message) {
 
         //reaction
         switch(convert_code(code)){
-            case 0 :
+            case 0 ://uniquement pour serveur, OH OH PROBLEMO
                 printf("wat");
                 break;
-            case 1 :
+            case 1 : //demande de completion de la phrase envoyée
                 complete_sentence(socket_descriptor , phrase);
                 break;
-            case 2 :
-                printf("phrase reçu: %s\n",phrase);
+            case 2 : //reception de phrases completée, affichage simple
+                if(isleader == 1) {
+                    tabReponses.tabPhrases[tabReponses.nbPhrases] = phrase;
+                    tabReponses.nbPhrases++;
+                }
+                printf("phrase reçue: %s\n",phrase);
                 break;
-            case 3 :
-
-                write_sentence(socket_descriptor);
+            case 3 : //demande speciale: transforme un non-leader en leader ou demande au leader de choisir une phrase de resultat
+                if(isleader == 1) {
+                    choose_answer(socket_descriptor);
+                    isleader = 0;//une fois que la reponse est choisie, on n'est plus leader
+                    tabReponses.nbPhrases = 0;
+                } else {
+                    isleader = 1;// deviens leader
+                    write_sentence(socket_descriptor);
+                }
                 break;
 
         }
@@ -216,6 +270,8 @@ void vie_client(int socket_descriptor) {
 
 /////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
+    int i;
+
     int socket_descriptor; 	    /* descripteur de socket */
     sockaddr_in adresse_locale; /* adresse de socket local */
     hostent * ptr_host;         /* info sur une machine hote */
@@ -227,6 +283,29 @@ int main(int argc, char **argv) {
 
     /* verification du nombre d'argument */
     verif_arg(argc);
+
+    //init table des phrases
+    // tabReponses.tabPhrases = malloc(10*sizeof(char*));
+    for(i=0; i<10; i++) {
+        tabReponses.tabPhrases[i] = malloc(200*sizeof(char));
+    }
+    tabReponses.nbPhrases = 0;
+
+
+    ////////////////////////////////simulation////////////////////////////////
+    printf("debug? o/n : ");
+    char * abcdefgtemp = malloc(50*sizeof(char));
+    fgets (abcdefgtemp, 50, stdin);
+    if(abcdefgtemp[0] == 'o') {
+        printf("phrase 'int|string': ");
+        abcdefgtemp = malloc(50*sizeof(char));
+        fgets (abcdefgtemp, 50, stdin);        
+        tabReponses.tabPhrases[tabReponses.nbPhrases] = abcdefgtemp;
+        tabReponses.nbPhrases++;
+        isleader = 1;
+    }
+
+    //////////////////////////////fin simulation//////////////////////////////
 
 
     /* trouver le serveur à partir de son adresse */
