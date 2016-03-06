@@ -28,7 +28,7 @@ typedef struct
    pthread_mutex_t mutex_stock;
 }
 serveur_t;
- 
+
  //variable globale
 serveur_t serveur;
 // static serveur_t serveur =
@@ -96,29 +96,6 @@ void renvoi (int sock) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-void choix_leader(Array * tabClients) {
-    if(tabClients->used == 0) {
-        perror("erreur : choix leader impossible");
-        exit(1);
-    } else if(tabClients->used == 1) {
-        tabClients->array[0].leader = 1;
-    } else if(tabClients->array[tabClients->used].leader == 1) {
-        tabClients->array[tabClients->used].leader == 0;
-        tabClients->array[0].leader == 1;
-    }else {
-        int i = 0;
-        for (i = 0; i < tabClients->used - 1; ++i) {
-           if(tabClients->array[i].leader == 1) {
-                tabClients->array[i].leader = 0;
-                tabClients->array[i+1].leader = 1;
-                return;
-           } 
-        }
-    }
-    return;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////
 //genere la concat de code~phrase proprement
 char * crea_phrase(char * mot, char * code) {
 
@@ -129,14 +106,67 @@ char * crea_phrase(char * mot, char * code) {
     return fin;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+void prevenir_leader() {
+    char * trigger = malloc(7*sizeof(char));
+    trigger = crea_phrase("go","0003");
+    int i = 0;
+    for (i = 0; i < serveur.tabClients->used - 1; ++i) {
+            printf("maybe? %d\n",serveur.tabClients->array[i].leader);
+       if(serveur.tabClients->array[i].leader == 1) {
+            printf("nope?");
+            write(serveur.tabClients->array[i].socket,trigger,strlen(trigger));
+       } 
+    }
+
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
-char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
+void choix_leader() {
+    if(serveur.tabClients->used == 0) {
+        perror("erreur : choix leader impossible");
+        exit(1);
+    } else {
+        if(serveur.tabClients->used == 1) {
+            serveur.tabClients->array[0].leader = 1;
+        } else if(serveur.tabClients->array[serveur.tabClients->used].leader == 1) {
+            serveur.tabClients->array[serveur.tabClients->used].leader = 0;
+            serveur.tabClients->array[0].leader = 1;
+        }else {
+            int i = 0;
+            int j = 0;
+            for (i = 0; i < serveur.tabClients->used - 1; ++i) {
+                if(serveur.tabClients->array[i].leader == 1) {
+                    j = 1;
+                    serveur.tabClients->array[i].leader = 0;
+                    serveur.tabClients->array[i+1].leader = 1;
+                    i = serveur.tabClients->used;
+                } 
+            }
+            if(j == 0) { //pas trouvé de leader
+                serveur.tabClients->array[0].leader = 1;
+            }
+        }
+        prevenir_leader();
+    }
+    return;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* conversion code to int */
+int convert_code(char * s) {
+    return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+// char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
+void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
 
     if (strstr(test,"~")) {
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
         int i;
+        int j;
 
         char * code;
         char * phrase;
@@ -147,9 +177,9 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
         phrase = strtok(NULL,"~");
         // printf("%s|\n",phrase);
         char * reponse = malloc((strlen(code) + 1 + strlen(phrase)) * sizeof(char));
-
+        i = convert_code(code);
         //on regarde ici le code et on reagit en consequence
-        if ((code[3] == '0')){
+        if (i == 0){
             // element = (Info_player)malloc(sizeof(Info_player));
             element.socket = nouv_socket_descriptor;//a faire apres la connexion!
             element.pseudo = phrase;
@@ -160,16 +190,26 @@ char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             // for(i = 0; i < serveur.tabClients->used; i++) {
             //     printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
             // }
+            //reponse = crea_phrase(phrase,"0003");//a changer pour envoyer autre type de messages
+
+            return;
+        }
+        else if (i == 1) {
+            i = 0;
+            reponse = crea_phrase(phrase,"0001");//a changer pour envoyer autre type de messages
+            for (j = 0; j < serveur.tabClients->used; ++j) {
+                if(serveur.tabClients->array[j].leader == 0) {
 
 
-            reponse = crea_phrase(phrase,"0003");//a changer pour envoyer autre type de messages
+                    write(serveur.tabClients->array[j].socket,reponse,strlen(reponse));
 
-            return reponse;
+                } 
+            }
         }
 
 
     }
-    return "";
+    return;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -210,7 +250,6 @@ static void * mj_main (void * p_data) {
     }
     choix_leader(serveur.tabClients);
     affich_clients(serveur.tabClients);
-
     while (1) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
@@ -233,9 +272,10 @@ static void * joueur_main (void * p_data)
    {
 
         pseudo = reception(nouv_socket_descriptor);
-        temp = decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
+        // temp = decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
+        decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
         sleep(5);
-        write(nouv_socket_descriptor,temp,strlen(temp));
+        //write(nouv_socket_descriptor,temp,strlen(temp));
 
    }
  

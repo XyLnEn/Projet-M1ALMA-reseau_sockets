@@ -97,6 +97,7 @@ int convert_code(char * s) {
 /* complete la phrase a trou */
 void complete_sentence(int socket_descriptor, char * phrase) {
     int i = 0;
+    int j;
     char * snippet = malloc(50* sizeof(char));
     char * oldReponse = malloc(strlen(phrase)* sizeof(char));
     char * tamponDeb = malloc(200* sizeof(char));
@@ -104,31 +105,30 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     char * reponse = malloc(200* sizeof(char));
     printf("le leader vous demande de completer cette phrase: %s\n", phrase);
     while(i == 0){
-        oldReponse = phrase;
+        memcpy(oldReponse, phrase, strlen(phrase));
+        // oldReponse = phrase;
         printf("par quoi voulez-vous remplacer le blanc (_) dans %s?\n", phrase);
         fgets (snippet, 50, stdin);
-        printf("1 %s\n",snippet);
-
+        for(j = 0; j < strlen(snippet); j++) {
+            if(snippet[j] == '\n') {
+                snippet[j] = '\0';
+            }
+        }
         tamponDeb = strtok(oldReponse,"_");
-        printf("2 %s\n",tamponDeb);
         memcpy(reponse, tamponDeb, strlen(tamponDeb));
-        printf("3 %s\n",reponse);
+
         memcpy(reponse + strlen(tamponDeb), snippet, strlen(snippet));
-        printf("4 %s\n",reponse);
         tamponFin = strtok(NULL,"_");
-        printf("2 %s\n",tamponFin);
         memcpy(reponse + strlen(tamponDeb) + strlen(snippet), tamponFin, strlen(tamponFin));
 
         printf("la phrase %s vous convient-elle? oui/non\n", reponse);
         fgets (snippet, 50, stdin);
-        if(snippet == "oui") { //BUG
+        if(snippet[0] == 'o') { //BUG
             i = 1;
         }
     }
-
     char * str = malloc( (strlen(reponse) + 5) *sizeof(char));
     str = crea_phrase(reponse,"0002");
-
     write_server(socket_descriptor,str);
 }
 
