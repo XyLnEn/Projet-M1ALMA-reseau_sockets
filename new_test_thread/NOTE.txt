@@ -60,7 +60,7 @@ plus?
 client envoie 0000~X -> son pseudo
 
 
-thread-serv: envoi a leader de 0003~bugrguirgs
+thread-serv: envoi a leader de 0003~go
 client-leader repond: 0001~ggryguyr___hsgbug
 
 thread-serv renvoie phrase a tous sauf leader: 0001~ggryguyr___hsgbug
@@ -75,6 +75,7 @@ au bout de W secondes, thread-store tente de lock la structure.
 quand reussi:
 -envoi de toutes les phrases une par une (0002~X) au client-leader (association nb dans tab + phrase)
 (vu qu'il sait qu'il est leader, il va stocker toutes ces phrases)
+fin -> envoi de 0003-go
 il repond: 0004~nb
 
 -envoi de toutes les phrases une par une (0002-X) au clients ->affichage

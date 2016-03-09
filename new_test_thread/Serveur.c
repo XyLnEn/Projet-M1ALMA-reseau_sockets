@@ -12,29 +12,50 @@ Serveur à lancer avant le client avec la commande : ./Serveur.exe
 #define TAILLE_MAX_NOM 256
 #define NB_CLIENTS_MAX 10
 #define ATTENTE_DEBUT_PARTIE 20
+#define ATTENTE_FIN_JEU 10
+
+#define TAILLE_PHRASE_SANS_CODE 195
+#define TAILLE_CODE 5
+#define TAILLE_PHRASE_AVEC_CODE 200
+
 
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
+typedef struct 
+{
+    int ident;
+    char * phrase;
+} 
+reponse_client;
+
+typedef struct 
+{
+    reponse_client liste_rep[NB_CLIENTS_MAX];
+    int nb_contenu;
+}
+liste_reponse_clients;
+
+
 /* Structure stockant les informations des threads clients et du serveur. */
 typedef struct
 {
    Array * tabClients;
+   liste_reponse_clients * tabReponses;
  
    pthread_t thread_serveur;
    pthread_t thread_clients [NB_CLIENTS_MAX];
    pthread_mutex_t mutex_stock;
+
+   int fin_partie;
 }
 serveur_t;
 
  //variable globale
 serveur_t serveur;
-// static serveur_t serveur =
-// {
-//     serveur.tabClients = malloc(sizeof(Array));
-// };
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* creation de la socket */
@@ -58,12 +79,16 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 /* réception d'un message envoyé par le serveur */
 char * reception(int sock) {
     //char *buffer = malloc(256*sizeof(char));//laisser en tableau sinon envoi 8 lettres par 8
-    static char buffer[256] = "";
+    char * buffer = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
+    char * cleaned_sentence = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
+    strcpy(cleaned_sentence,"");
+    // strcpy()
     int longueur;
    
-    if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0){ 
+    if ((longueur = read(sock, buffer, TAILLE_PHRASE_AVEC_CODE)) <= 0){ 
         return "";
     }
+
     
     //traitement du message 
     int i;
@@ -72,16 +97,23 @@ char * reception(int sock) {
             buffer[i] = '\0';
         }
     }
+
+
+    memcpy(cleaned_sentence, buffer, longueur);
+
     // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
 
-    printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
-    return buffer;
+    //printf("marche1?");
+    printf("reception d'un message de taille %d : %s|\n", longueur, cleaned_sentence);
+
+    //printf("marche2?");
+    return cleaned_sentence;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
 void renvoi (int sock) {
 
-    char buffer[256];
+    char buffer[TAILLE_PHRASE_AVEC_CODE];
     int longueur;
    
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
@@ -102,19 +134,19 @@ char * crea_phrase(char * mot, char * code) {
     char * fin = malloc((strlen(mot) + strlen(code)+1) * sizeof(char));
     memcpy(fin, code, strlen(code));
     memcpy(fin + strlen(code), "~", 1);
-    memcpy(fin + strlen(code) + 1, mot, strlen(mot)+1);
+    memcpy(fin + strlen(code) + 1, mot, strlen(mot));
     return fin;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
 void prevenir_leader() {
-    char * trigger = malloc(7*sizeof(char));
+    char * trigger = malloc(7*sizeof(char));//on connait exactement la taille
     trigger = crea_phrase("go","0003");
     int i = 0;
     for (i = 0; i < serveur.tabClients->used - 1; ++i) {
-            printf("maybe? %d\n",serveur.tabClients->array[i].leader);
+            //printf("maybe? %d\n",serveur.tabClients->array[i].leader);
        if(serveur.tabClients->array[i].leader == 1) {
-            printf("nope?");
+            //printf("nope?");
             write(serveur.tabClients->array[i].socket,trigger,strlen(trigger));
        } 
     }
@@ -162,7 +194,6 @@ int convert_code(char * s) {
 // char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
-
     if (strstr(test,"~")) {
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
         int i;
@@ -170,19 +201,27 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
         char * code;
         char * phrase;
-        code = malloc(5*sizeof(char));
+
+        code = malloc(TAILLE_CODE*sizeof(char));
+        strcpy(code,"");
         code = strtok(test,"~");
         // printf("%s|\n",code);
-        phrase = malloc(256*sizeof(char));
+        phrase = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
+        strcpy(phrase,"");
         phrase = strtok(NULL,"~");
         // printf("%s|\n",phrase);
-        char * reponse = malloc((strlen(code) + 1 + strlen(phrase)) * sizeof(char));
+        char * reponse;
+        reponse = malloc((strlen(code) + 1 + strlen(phrase)) * sizeof(char));
+        strcpy(reponse,"");
         i = convert_code(code);
         //on regarde ici le code et on reagit en consequence
         if (i == 0){
-            // element = (Info_player)malloc(sizeof(Info_player));
             element.socket = nouv_socket_descriptor;//a faire apres la connexion!
-            element.pseudo = phrase;
+            
+            element.pseudo = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
+            //element.pseudo = phrase;
+            strcpy(element.pseudo,phrase);
+
             element.score = 0;
             element.leader = 0;
             insertArray(serveur.tabClients, element);
@@ -195,8 +234,9 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             return;
         }
         else if (i == 1) {
-            i = 0;
+
             reponse = crea_phrase(phrase,"0001");//a changer pour envoyer autre type de messages
+            printf("****************************************************************%s*\n",reponse);
             for (j = 0; j < serveur.tabClients->used; ++j) {
                 if(serveur.tabClients->array[j].leader == 0) {
 
@@ -205,6 +245,38 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
 
                 } 
             }
+        }
+        else if (i == 2) {
+            pthread_mutex_lock (& serveur.mutex_stock);
+            
+            if(serveur.fin_partie == 0) {
+
+                printf("premiere reponse\n");
+                serveur.fin_partie = 1;
+            }
+
+            //ecriture du couple phrase/no dans le tab de reponses...
+            reponse_client * rep = malloc(sizeof(reponse_client));
+            rep->ident = nouv_socket_descriptor;
+
+            rep->phrase = malloc(strlen(phrase) * sizeof(char) );
+            strcpy(rep->phrase,phrase);
+            // rep->phrase = phrase;
+
+            serveur.tabReponses->liste_rep[serveur.tabReponses->nb_contenu] = *rep;
+            serveur.tabReponses->nb_contenu++;
+
+            // printf("on a ecrit dans le tab de reponses: %s\n",phrase);
+            // printf("etat actuel: %d rep:\n",serveur.tabReponses->nb_contenu);
+            // for(j = 0; j < serveur.tabReponses->nb_contenu; j++) {
+            //     printf("%d :",j);
+            //     printf("%s\n",serveur.tabReponses->liste_rep[j].phrase);
+            // }
+            printf("******************\n");
+
+
+            //liberation du mutex
+            pthread_mutex_unlock (& serveur.mutex_stock);
         }
 
 
@@ -228,13 +300,50 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 
 /////////////////////////////////////////////////////////////////////////////////////
 void affich_clients(Array * tabClients) {
-    printf("pseudo --- score --- leader\n");
+    printf("pseudo\t score\t leader\n");
     int i = 0;
     for (i = 0; i < tabClients->used; ++i) {
-        printf("%s --- %d --- %d --- %d\n", 
+        printf("%s\t %d\t %d\t %d\n", 
              tabClients->array[i].pseudo, tabClients->array[i].score,
              tabClients->array[i].leader, tabClients->array[i].socket);
     }
+    return;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+void envoi_resultat_leader() {
+
+    char * reponse; 
+    char * phrase;
+    char nb[5];
+    int i;
+    int j;
+    for (i = 0; i < serveur.tabClients->used - 1; ++i) {
+        if(serveur.tabClients->array[i].leader == 1) {
+            j = serveur.tabClients->array[i].socket;
+            i = serveur.tabClients->used;
+        } 
+    }
+    for (i = 0; i < serveur.tabReponses->nb_contenu; ++i)
+    {
+        reponse = malloc((TAILLE_PHRASE_AVEC_CODE + 3)*sizeof(char)); //+3 char pour nb|
+        phrase = malloc (TAILLE_PHRASE_SANS_CODE * sizeof(char));
+
+        sprintf(nb, "%d", serveur.tabReponses->liste_rep[i].ident);
+        memcpy(phrase, nb, strlen(nb));
+        memcpy(phrase + strlen(nb), "|", 1);
+        memcpy(phrase + strlen(nb) + 1, serveur.tabReponses->liste_rep[i].phrase , strlen(serveur.tabReponses->liste_rep[i].phrase));
+        
+        reponse = crea_phrase(phrase,"0002");
+
+        printf("%d, %s de taille %zd\n",i,reponse, strlen(reponse));
+        
+        write(j, reponse, strlen(reponse));
+        sleep(5);
+    }
+    write(j, "0003~go", 7*sizeof(char));
+
+    serveur.fin_partie = 0;
     return;
 }
 
@@ -253,8 +362,20 @@ static void * mj_main (void * p_data) {
     while (1) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
- 
-      /* Fin de la zone protegee. */
+      if(serveur.fin_partie == 1) {//on a reçu au moins 1 reponse, debut du compte a rebour
+        pthread_mutex_unlock (& serveur.mutex_stock);
+
+        //printf("azyyyyyyyyyyyyyyyyyLOLOLOLOLO");
+
+        sleep(ATTENTE_FIN_JEU);//attente de 40 sec
+
+        pthread_mutex_lock (& serveur.mutex_stock);
+
+        printf("fin du jeu, choix du gagnant: \n");
+
+        envoi_resultat_leader();
+
+      }
       pthread_mutex_unlock (& serveur.mutex_stock);
     }
     return NULL;
@@ -272,10 +393,8 @@ static void * joueur_main (void * p_data)
    {
 
         pseudo = reception(nouv_socket_descriptor);
-        // temp = decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
         decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
-        sleep(5);
-        //write(nouv_socket_descriptor,temp,strlen(temp));
+        // sleep(5);//?????????
 
    }
  
@@ -285,7 +404,8 @@ static void * joueur_main (void * p_data)
 int main (void)
 {
 	serveur.tabClients = malloc(sizeof(Array));
-    serveur.mutex_stock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;;
+    serveur.tabReponses = malloc(sizeof(liste_reponse_clients));
+    serveur.mutex_stock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 
     int socket_descriptor, 		    /* descripteur de socket */
 		nouv_socket_descriptor,     /* [nouveau] descripteur de socket */
@@ -300,6 +420,7 @@ int main (void)
 	int i = 0;
     int thread_Maitre_Jeu = 0;
     int thread_Liaison_Joueur = 0;
+    serveur.fin_partie = 0;
  
 	/* Creation du thread du serveur. */
 	printf ("Creation du thread du serveur !\n");

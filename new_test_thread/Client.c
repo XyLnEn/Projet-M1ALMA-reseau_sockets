@@ -10,6 +10,11 @@ Client a lancer apres le serveur avec la commande : ./Client.exe
 // #include <pthread.h>
 #include "Array.h"
 
+
+#define TAILLE_PHRASE_SANS_CODE 195
+#define TAILLE_CODE 5
+#define TAILLE_PHRASE_AVEC_CODE 200
+
 typedef struct {
     char * tabPhrases[10];
     int nbPhrases;
@@ -72,7 +77,7 @@ static void connect_socket(int socket_descriptor, sockaddr_in adresse_locale) {
 }
 
 /* envoi du message vers le serveur */
-static void write_server(int socket_descriptor, const char *mesg) {
+static void write_server(int socket_descriptor, char *mesg) {
 	if ((write(socket_descriptor, mesg, strlen(mesg))) <= 0) {
 		perror("erreur : impossible d'ecrire le message destine au serveur.");
 		exit(1);
@@ -102,7 +107,7 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     char * oldReponse = malloc(strlen(phrase)* sizeof(char));
     char * tamponDeb = malloc(200* sizeof(char));
     char * tamponFin = malloc(200* sizeof(char));
-    char * reponse = malloc(200* sizeof(char));
+    char * reponse = malloc(TAILLE_PHRASE_SANS_CODE* sizeof(char));
     printf("le leader vous demande de completer cette phrase: %s\n", phrase);
     while(i == 0){
         memcpy(oldReponse, phrase, strlen(phrase));
@@ -121,13 +126,13 @@ void complete_sentence(int socket_descriptor, char * phrase) {
         tamponFin = strtok(NULL,"_");
         memcpy(reponse + strlen(tamponDeb) + strlen(snippet), tamponFin, strlen(tamponFin));
 
-        printf("la phrase %s vous convient-elle? oui/non\n", reponse);
+        printf("la phrase:\n %s \nvous convient-elle? oui/non\n", reponse);
         fgets (snippet, 50, stdin);
         if(snippet[0] == 'o') { //BUG
             i = 1;
         }
     }
-    char * str = malloc( (strlen(reponse) + 5) *sizeof(char));
+    char * str = malloc( (strlen(reponse) + TAILLE_CODE) *sizeof(char));
     str = crea_phrase(reponse,"0002");
     write_server(socket_descriptor,str);
 }
@@ -140,21 +145,24 @@ void choose_answer(int socket_descriptor) {
         printf("oups");
     } else {
         int i;
-        char * number = malloc(5*sizeof(char));
-        char * words = malloc(200*sizeof(char));
+        char * number = malloc(TAILLE_CODE*sizeof(char));
+        char * words = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
         char * index[10];
         for(i = 0; i < tabReponses.nbPhrases; i++) {
             index[i] = malloc(2*sizeof(char));
             printf("%s\n",tabReponses.tabPhrases[i]);
-            number = tabReponses.tabPhrases[i];
-            index[i] = strtok(number,"|");
+            strcpy(number, tabReponses.tabPhrases[i]);
+            strcpy(index[i],strtok(number,"|"));
+            // index[i] = strtok(number,"|");
             printf("%s\n",index[i]);
             words = strtok(NULL,"|");
             printf("phrase no %d : %s\n",i,words);
         }
         printf("quel est le gagnant? : ");
         fgets (number, 5, stdin);
-        i = number[0] - '0';
+        printf("---->%s\n",index[i]);
+        i = number[0] - '0';//transforme string en int
+        printf("---%d, ->%s\n",i,index[i]);
         char * str = malloc( (strlen(index[i]) + 5) *sizeof(char));
         str = crea_phrase(index[i],"0004");
         write_server(socket_descriptor,str);
@@ -166,12 +174,12 @@ void choose_answer(int socket_descriptor) {
 /* genere la phrase a trou avec verification de validité */
 void write_sentence(int socket_descriptor) {
     printf("vous etes leader, quelle phrase envoyer? (format XXX_XX) : ");
-    char* mesg = malloc(200*sizeof(char));
-    fgets (mesg, 195, stdin);
+    char* mesg = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
+    fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
     while ((strstr(mesg, "_") == NULL) && (strstr(mesg, "~") == NULL)) {
         printf("le message doit contenir le mot _ pour signifier la partie a completer\n");
         printf("il ne peut pas contenir le charactere ~ ni _\n");
-        fgets (mesg, 195, stdin);
+        fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
     }
 
     char * str = malloc( (strlen(mesg) + 5) *sizeof(char));
@@ -189,10 +197,10 @@ void reaction_message(int socket_descriptor, char * message) {
         char * code;
         char * phrase;
         char * reponse;
-        code = malloc(5*sizeof(char));
+        code = malloc(TAILLE_CODE*sizeof(char));
         code = strtok(message,"~");
         // printf("%s|\n",code);
-        phrase = malloc(256*sizeof(char));
+        phrase = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
         phrase = strtok(NULL,"~");
         // printf("%s|\n",phrase);
 
@@ -206,7 +214,8 @@ void reaction_message(int socket_descriptor, char * message) {
                 break;
             case 2 : //reception de phrases completée, affichage simple
                 if(isleader == 1) {
-                    tabReponses.tabPhrases[tabReponses.nbPhrases] = phrase;
+                    strcpy(tabReponses.tabPhrases[tabReponses.nbPhrases], phrase);
+                    // tabReponses.tabPhrases[tabReponses.nbPhrases] = phrase;
                     tabReponses.nbPhrases++;
                 }
                 printf("phrase reçue: %s\n",phrase);
@@ -242,7 +251,9 @@ void reaction_message(int socket_descriptor, char * message) {
 void vie_client(int socket_descriptor) {
     /* initialisation de la file d'ecoute */
     //listen(socket_descriptor,5);
-    char buffer[250];
+    char buffer[TAILLE_PHRASE_AVEC_CODE];
+    char * cleaned_sentence = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
+    strcpy(cleaned_sentence,"");
     int longueur; 
     int i;
    
@@ -257,9 +268,17 @@ void vie_client(int socket_descriptor) {
                 buffer[i] = '\0';
             }
         }
-        printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
+        memcpy(cleaned_sentence, buffer, longueur);
 
-        reaction_message(socket_descriptor, buffer);
+
+        printf("reception d'un message de taille %d : %s|\n", longueur, cleaned_sentence);
+
+        reaction_message(socket_descriptor, cleaned_sentence);
+
+
+        // printf("reception d'un message de taille %d : %s|\n", longueur, buffer);
+
+        // reaction_message(socket_descriptor, buffer);
 
         return ;
     }
@@ -276,7 +295,7 @@ int main(int argc, char **argv) {
     sockaddr_in adresse_locale; /* adresse de socket local */
     hostent * ptr_host;         /* info sur une machine hote */
     servent * ptr_service;      /* info sur service */
-    char buffer[256];
+    char buffer[TAILLE_PHRASE_AVEC_CODE];
     char * mesg;                /* message envoye */
     char * host = "LOCALHOST";  /* nom de la machine distante */
     char * pseudo;
@@ -287,12 +306,13 @@ int main(int argc, char **argv) {
     //init table des phrases
     // tabReponses.tabPhrases = malloc(10*sizeof(char*));
     for(i=0; i<10; i++) {
-        tabReponses.tabPhrases[i] = malloc(200*sizeof(char));
+        tabReponses.tabPhrases[i] = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
     }
     tabReponses.nbPhrases = 0;
 
 
-    ////////////////////////////////simulation////////////////////////////////
+    ////////////////////////////////simulation///////////////////////////////
+    /*
     printf("debug? o/n : ");
     char * abcdefgtemp = malloc(50*sizeof(char));
     fgets (abcdefgtemp, 50, stdin);
@@ -305,7 +325,8 @@ int main(int argc, char **argv) {
         isleader = 1;
     }
 
-    //////////////////////////////fin simulation//////////////////////////////
+    */
+    /////////////////////////////fin simulation//////////////////////////////
 
 
     /* trouver le serveur à partir de son adresse */
@@ -352,20 +373,13 @@ int main(int argc, char **argv) {
     connect_socket(socket_descriptor, adresse_locale);
 
     //impossible de placer cela dans une fonction?!?! j'abandonne.
-    char * temp = malloc(100*sizeof(char));
+    char * temp = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
     size_t len = 0;
     printf("\n-----------------------------------------\n");
     printf("\nEcrivez votre pseudo : ");
     getline(&temp, &len, stdin);
 
-    // strcpy(pseudo, "0000~");
-    // printf("\n%s", pseudo);
-    // strcat(pseudo, temp);
-    // printf("\n%s", pseudo);
-    // strcat(pseudo, "\n");
-    // printf("\n%s", pseudo);
-
-    char * code = malloc(5*sizeof(char));
+    char * code = malloc(TAILLE_CODE*sizeof(char));
     code = "0000";
     pseudo = crea_phrase(temp,code);
     printf("%s|\n",pseudo);
