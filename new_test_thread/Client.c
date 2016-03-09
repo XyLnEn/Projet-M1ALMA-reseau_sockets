@@ -160,9 +160,7 @@ void choose_answer(int socket_descriptor) {
         }
         printf("quel est le gagnant? : ");
         fgets (number, 5, stdin);
-        printf("---->%s\n",index[i]);
         i = number[0] - '0';//transforme string en int
-        printf("---%d, ->%s\n",i,index[i]);
         char * str = malloc( (strlen(index[i]) + 5) *sizeof(char));
         str = crea_phrase(index[i],"0004");
         write_server(socket_descriptor,str);
