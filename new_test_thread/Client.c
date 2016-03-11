@@ -150,11 +150,11 @@ void choose_answer(int socket_descriptor) {
         char * index[10];
         for(i = 0; i < tabReponses.nbPhrases; i++) {
             index[i] = malloc(2*sizeof(char));
-            printf("%s\n",tabReponses.tabPhrases[i]);
+            // printf("%s\n",tabReponses.tabPhrases[i]);
             strcpy(number, tabReponses.tabPhrases[i]);
             strcpy(index[i],strtok(number,"|"));
             // index[i] = strtok(number,"|");
-            printf("%s\n",index[i]);
+            // printf("%s\n",index[i]);
             words = strtok(NULL,"|");
             printf("phrase no %d : %s\n",i,words);
         }
@@ -259,7 +259,7 @@ void vie_client(int socket_descriptor) {
         printf("ayy");
         return ;
     } else {
-        printf("avant le clean: %d : %s|\n", longueur, buffer);
+        // printf("avant le clean: %d : %s|\n", longueur, buffer);
         //traitement du message
         for(i = 0; i < longueur; i++) {
             if(buffer[i] == '\n') {
@@ -267,9 +267,9 @@ void vie_client(int socket_descriptor) {
             }
         }
         memcpy(cleaned_sentence, buffer, longueur);
+        cleaned_sentence[longueur+1] ='\0';
 
-
-        printf("reception d'un message de taille %d : %s|\n", longueur, cleaned_sentence);
+        printf("reception d'un message de taille %d : %s\n", longueur, cleaned_sentence);
 
         reaction_message(socket_descriptor, cleaned_sentence);
 
@@ -380,7 +380,7 @@ int main(int argc, char **argv) {
     char * code = malloc(TAILLE_CODE*sizeof(char));
     code = "0000";
     pseudo = crea_phrase(temp,code);
-    printf("%s|\n",pseudo);
+    // printf("%s|\n",pseudo);
     write_server(socket_descriptor, pseudo);
 
     for(;;) {

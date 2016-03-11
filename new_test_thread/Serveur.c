@@ -17,6 +17,7 @@ Serveur à lancer avant le client avec la commande : ./Serveur.exe
 #define TAILLE_PHRASE_SANS_CODE 195
 #define TAILLE_CODE 5
 #define TAILLE_PHRASE_AVEC_CODE 200
+#define SCORE_FIN_PARTIE 3
 
 
 typedef struct sockaddr sockaddr;
@@ -24,6 +25,7 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
+/* Structure representant une reponse d'un client. */
 typedef struct 
 {
     int ident;
@@ -31,6 +33,7 @@ typedef struct
 } 
 reponse_client;
 
+/* Structure stockant les reponses des clients. */
 typedef struct 
 {
     reponse_client liste_rep[NB_CLIENTS_MAX];
@@ -100,6 +103,7 @@ char * reception(int sock) {
 
 
     memcpy(cleaned_sentence, buffer, longueur);
+    cleaned_sentence[longueur+1] ='\0';
 
     // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
 
@@ -110,7 +114,8 @@ char * reception(int sock) {
     return cleaned_sentence;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////
+/*
 void renvoi (int sock) {
 
     char buffer[TAILLE_PHRASE_AVEC_CODE];
@@ -118,7 +123,7 @@ void renvoi (int sock) {
    
     if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
     	return;
-    
+    //
 	 //traitement du message 
 	printf("reception d'un message.\n");
     printf("message lu : %s \n", buffer);
@@ -127,7 +132,8 @@ void renvoi (int sock) {
     return;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
+*/
+////////////////////////////////////////////////////////////////////////////////////
 //genere la concat de code~phrase proprement
 char * crea_phrase(char * mot, char * code) {
 
@@ -198,6 +204,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
         Info_player element;//exemple de creation d'un element -> a faire dans le thread
         int i;
         int j;
+        int k;
 
         char * code;
         char * phrase;
@@ -219,7 +226,6 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             element.socket = nouv_socket_descriptor;//a faire apres la connexion!
             
             element.pseudo = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
-            //element.pseudo = phrase;
             strcpy(element.pseudo,phrase);
 
             element.score = 0;
@@ -278,6 +284,22 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             //liberation du mutex
             pthread_mutex_unlock (& serveur.mutex_stock);
         }
+        else if (i == 4) {
+            j = phrase[0] - '0';
+            for(k = 0; k < serveur.tabClients->used; k++) {
+                if(serveur.tabClients->array[k].socket == j) { //trouvé le gagnant!
+                    serveur.tabClients->array[k].score++;
+                    if(serveur.tabClients->array[k].score >= SCORE_FIN_PARTIE) {
+                        printf("%s est le gagnant! CONGRATULATION!\n",serveur.tabClients->array[k].pseudo);
+                    } else {
+                        printf("%s remporte le point!\n",serveur.tabClients->array[k].pseudo);
+                        serveur.tabReponses->nb_contenu = 0;
+                        choix_leader();
+                    }
+                
+                }
+            }
+        }
 
 
     }
@@ -299,13 +321,13 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-void affich_clients(Array * tabClients) {
+void affich_clients() {
     printf("pseudo\t score\t leader\n");
     int i = 0;
-    for (i = 0; i < tabClients->used; ++i) {
+    for (i = 0; i < serveur.tabClients->used; ++i) {
         printf("%s\t %d\t %d\t %d\n", 
-             tabClients->array[i].pseudo, tabClients->array[i].score,
-             tabClients->array[i].leader, tabClients->array[i].socket);
+             serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].score,
+             serveur.tabClients->array[i].leader, serveur.tabClients->array[i].socket);
     }
     return;
 }
@@ -357,8 +379,8 @@ static void * mj_main (void * p_data) {
     while(serveur.tabClients->used < 3) {
         sleep(1);
     }
-    choix_leader(serveur.tabClients);
-    affich_clients(serveur.tabClients);
+    choix_leader();
+    affich_clients();
     while (1) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
