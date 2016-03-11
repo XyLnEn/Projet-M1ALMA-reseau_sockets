@@ -81,3 +81,6 @@ il repond: 0004~nb
 -envoi de toutes les phrases une par une (0002-X) au clients ->affichage
 
 serveur fait son boulot et envoie a tt le monde le gagnant (0004~X) il recommence (choix leader... sauf si score > 4)
+
+creation de room: tab de serveur_t, co passe nom room
+messages hors normes: redirection de room (100X~....)

@@ -11,7 +11,7 @@ Serveur à lancer avant le client avec la commande : ./Serveur.exe
 #include "Array.h"
 #define TAILLE_MAX_NOM 256
 #define NB_CLIENTS_MAX 10
-#define ATTENTE_DEBUT_PARTIE 20
+#define ATTENTE_DEBUT_PARTIE 10
 #define ATTENTE_FIN_JEU 10
 
 #define TAILLE_PHRASE_SANS_CODE 195
@@ -149,7 +149,7 @@ void prevenir_leader() {
     char * trigger = malloc(7*sizeof(char));//on connait exactement la taille
     trigger = crea_phrase("go","0003");
     int i = 0;
-    for (i = 0; i < serveur.tabClients->used - 1; ++i) {
+    for (i = 0; i < serveur.tabClients->used; ++i) {
             //printf("maybe? %d\n",serveur.tabClients->array[i].leader);
        if(serveur.tabClients->array[i].leader == 1) {
             //printf("nope?");
@@ -167,12 +167,14 @@ void choix_leader() {
     } else {
         if(serveur.tabClients->used == 1) {
             serveur.tabClients->array[0].leader = 1;
-        } else if(serveur.tabClients->array[serveur.tabClients->used].leader == 1) {
-            serveur.tabClients->array[serveur.tabClients->used].leader = 0;
+        } else if(serveur.tabClients->array[serveur.tabClients->used-1].leader == 1) {
+            printf("yes");
+            serveur.tabClients->array[serveur.tabClients->used-1].leader = 0;
             serveur.tabClients->array[0].leader = 1;
         }else {
             int i = 0;
             int j = 0;
+            printf("no");
             for (i = 0; i < serveur.tabClients->used - 1; ++i) {
                 if(serveur.tabClients->array[i].leader == 1) {
                     j = 1;
@@ -182,9 +184,11 @@ void choix_leader() {
                 } 
             }
             if(j == 0) { //pas trouvé de leader
+                printf("fuck no");
                 serveur.tabClients->array[0].leader = 1;
             }
         }
+        affich_clients();
         prevenir_leader();
     }
     return;
@@ -194,6 +198,16 @@ void choix_leader() {
 /* conversion code to int */
 int convert_code(char * s) {
     return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
+}
+
+void prevenir_clients(int k) {
+    char * reponse = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
+    int w
+    memcpy(reponse, serveur.tabClients->array[k].pseudo, strlen(serveur.tabClients->array[k].pseudo));
+    memcpy(reponse + strlen(serveur.tabClients->array[k].pseudo) , " a gagne!", 9);
+    for(k = 0; k < serveur.tabClients->used; k++) {
+
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -294,6 +308,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                     } else {
                         printf("%s remporte le point!\n",serveur.tabClients->array[k].pseudo);
                         serveur.tabReponses->nb_contenu = 0;
+                        prevenir_clients(k);
                         choix_leader();
                     }
                 
@@ -340,7 +355,7 @@ void envoi_resultat_leader() {
     char nb[5];
     int i;
     int j;
-    for (i = 0; i < serveur.tabClients->used - 1; ++i) {
+    for (i = 0; i < serveur.tabClients->used; ++i) {
         if(serveur.tabClients->array[i].leader == 1) {
             j = serveur.tabClients->array[i].socket;
             i = serveur.tabClients->used;
@@ -361,7 +376,7 @@ void envoi_resultat_leader() {
         printf("%d, %s de taille %zd\n",i,reponse, strlen(reponse));
         
         write(j, reponse, strlen(reponse));
-        sleep(5);
+        sleep(2);
     }
     write(j, "0003~go", 7*sizeof(char));
 

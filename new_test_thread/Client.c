@@ -269,7 +269,7 @@ void vie_client(int socket_descriptor) {
         memcpy(cleaned_sentence, buffer, longueur);
         cleaned_sentence[longueur+1] ='\0';
 
-        printf("reception d'un message de taille %d : %s\n", longueur, cleaned_sentence);
+        // printf("reception d'un message de taille %d : %s\n", longueur, cleaned_sentence);
 
         reaction_message(socket_descriptor, cleaned_sentence);
 
