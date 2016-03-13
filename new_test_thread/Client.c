@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
 
     for(;;) {
         printf("\n-----------------------------------------\n");
-    	printf("envoi d'un message au serveur : ");
+    	// printf("envoi d'un message au serveur : ");
     
     	/* ecrit un message de taille 100 max depuis la console */
     	//fgets (mesg, 100, stdin);

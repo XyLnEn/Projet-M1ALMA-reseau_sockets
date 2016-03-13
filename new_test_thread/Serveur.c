@@ -150,10 +150,10 @@ void prevenir_leader() {
     trigger = crea_phrase("go","0003");
     int i = 0;
     for (i = 0; i < serveur.tabClients->used; ++i) {
-            //printf("maybe? %d\n",serveur.tabClients->array[i].leader);
+            // printf("maybe? %d\n",serveur.tabClients->array[i].leader);
        if(serveur.tabClients->array[i].leader == 1) {
-            //printf("nope?");
             write(serveur.tabClients->array[i].socket,trigger,strlen(trigger));
+
        } 
     }
 
@@ -168,13 +168,11 @@ void choix_leader() {
         if(serveur.tabClients->used == 1) {
             serveur.tabClients->array[0].leader = 1;
         } else if(serveur.tabClients->array[serveur.tabClients->used-1].leader == 1) {
-            printf("yes");
             serveur.tabClients->array[serveur.tabClients->used-1].leader = 0;
             serveur.tabClients->array[0].leader = 1;
         }else {
             int i = 0;
             int j = 0;
-            printf("no");
             for (i = 0; i < serveur.tabClients->used - 1; ++i) {
                 if(serveur.tabClients->array[i].leader == 1) {
                     j = 1;
@@ -184,7 +182,6 @@ void choix_leader() {
                 } 
             }
             if(j == 0) { //pas trouvé de leader
-                printf("fuck no");
                 serveur.tabClients->array[0].leader = 1;
             }
         }
@@ -200,13 +197,18 @@ int convert_code(char * s) {
     return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
 }
 
-void prevenir_clients(int k) {
+/////////////////////////////////////////////////////////////////////////////////
+/*previens les client du gagnant d'un tour */
+void prevenir_clients(int k, char * suiv) {
     char * reponse = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
-    int w
+    int w;
     memcpy(reponse, serveur.tabClients->array[k].pseudo, strlen(serveur.tabClients->array[k].pseudo));
-    memcpy(reponse + strlen(serveur.tabClients->array[k].pseudo) , " a gagne!", 9);
-    for(k = 0; k < serveur.tabClients->used; k++) {
-
+    // memcpy(reponse + strlen(serveur.tabClients->array[k].pseudo) , " a gagne ce tour!", 9);
+    memcpy(reponse + strlen(serveur.tabClients->array[k].pseudo) , suiv, strlen(suiv));
+    reponse = crea_phrase(reponse,"0002");
+    for(w = 0; w < serveur.tabClients->used; w++) {
+        write(serveur.tabClients->array[w].socket,reponse,strlen(reponse));
+        sleep(1);
     }
 }
 
@@ -232,7 +234,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
         phrase = strtok(NULL,"~");
         // printf("%s|\n",phrase);
         char * reponse;
-        reponse = malloc((strlen(code) + 1 + strlen(phrase)) * sizeof(char));
+        reponse = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
         strcpy(reponse,"");
         i = convert_code(code);
         //on regarde ici le code et on reagit en consequence
@@ -304,11 +306,14 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                 if(serveur.tabClients->array[k].socket == j) { //trouvé le gagnant!
                     serveur.tabClients->array[k].score++;
                     if(serveur.tabClients->array[k].score >= SCORE_FIN_PARTIE) {
+                        strcpy(reponse, " a gagne la partie, CONGRATULATION!");
                         printf("%s est le gagnant! CONGRATULATION!\n",serveur.tabClients->array[k].pseudo);
+                        prevenir_clients(k,reponse);
                     } else {
+                        strcpy(reponse, " a gagne ce tour!");
                         printf("%s remporte le point!\n",serveur.tabClients->array[k].pseudo);
                         serveur.tabReponses->nb_contenu = 0;
-                        prevenir_clients(k);
+                        prevenir_clients(k,reponse);
                         choix_leader();
                     }
                 
@@ -376,7 +381,7 @@ void envoi_resultat_leader() {
         printf("%d, %s de taille %zd\n",i,reponse, strlen(reponse));
         
         write(j, reponse, strlen(reponse));
-        sleep(2);
+        sleep(1);
     }
     write(j, "0003~go", 7*sizeof(char));
 
@@ -431,7 +436,7 @@ static void * joueur_main (void * p_data)
 
         pseudo = reception(nouv_socket_descriptor);
         decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
-        // sleep(5);//?????????
+        // sleep(1);//?????????
 
    }
  
