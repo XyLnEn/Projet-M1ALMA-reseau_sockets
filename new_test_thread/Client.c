@@ -85,10 +85,16 @@ static void write_server(int socket_descriptor, char *mesg) {
 }
 
 char * crea_phrase(char * mot, char * code) {
-    char * fin = malloc((strlen(mot) + strlen(code)) * sizeof(char));
+    char * fin = malloc((strlen(mot) + strlen(code) + 1) * sizeof(char));
     memcpy(fin, code, strlen(code));
     memcpy(fin + strlen(code), "~", 1);
-    memcpy(fin + strlen(code) + 1, mot, strlen(mot));
+    printf("%zd : %s|\n",strlen(mot),mot);
+    if(mot[strlen(mot)-1] == '\n') {
+        memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
+    } else {
+        memcpy(fin + strlen(code) + 1, mot, strlen(mot));
+    }
+    
     return fin;
 }
 
@@ -121,7 +127,6 @@ void complete_sentence(int socket_descriptor, char * phrase) {
         }
         tamponDeb = strtok(oldReponse,"_");
         memcpy(reponse, tamponDeb, strlen(tamponDeb));
-
         memcpy(reponse + strlen(tamponDeb), snippet, strlen(snippet));
         tamponFin = strtok(NULL,"_");
         memcpy(reponse + strlen(tamponDeb) + strlen(snippet), tamponFin, strlen(tamponFin));
@@ -134,6 +139,7 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     }
     char * str = malloc( (strlen(reponse) + TAILLE_CODE) *sizeof(char));
     str = crea_phrase(reponse,"0002");
+    printf("%zd\n",strlen(str));
     write_server(socket_descriptor,str);
 }
 
@@ -173,11 +179,24 @@ void choose_answer(int socket_descriptor) {
 void write_sentence(int socket_descriptor) {
     printf("vous etes leader, quelle phrase envoyer? (format XXX_XX) : ");
     char* mesg = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
+    char * clean = malloc((strlen(mesg) + 2) * sizeof(char));
     fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
-    while ((strstr(mesg, "_") == NULL) && (strstr(mesg, "~") == NULL)) {
+    while ( (strlen(mesg) < 0) && (strstr(mesg, "_") == NULL) && (strstr(mesg, "~") == NULL)) {
         printf("le message doit contenir le mot _ pour signifier la partie a completer\n");
         printf("il ne peut pas contenir le charactere ~ ni _\n");
         fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
+    }
+    if(mesg[0] == '_') {
+        memcpy(clean, " ", 1);
+        memcpy(clean +1, mesg, strlen(mesg));
+        memcpy(mesg, clean, strlen(clean));
+    }
+    printf("lolololo %c|\n", mesg[strlen(mesg)-2]);
+    if(mesg[strlen(mesg)-2] == '_') {
+        printf("youhou");
+        memcpy(clean, mesg, strlen(mesg)-1);
+        memcpy(clean + strlen(mesg)-1, " \0", 2);
+        memcpy(mesg, clean, strlen(clean));
     }
 
     char * str = malloc( (strlen(mesg) + 5) *sizeof(char));
