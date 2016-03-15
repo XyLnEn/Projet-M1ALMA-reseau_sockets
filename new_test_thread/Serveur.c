@@ -1,6 +1,13 @@
-/*----------------------------------------------
-Serveur à lancer avant le client avec la commande : ./Serveur.exe
-------------------------------------------------*/
+/**
+ * \file Serveur.c
+ * \brief Serveur qui gère une partie du jeu Sentence against humanity
+ * \author Lenny Lucas - Alicia Boucard
+ * \version 1
+ * \date mars 2016
+ *
+ * Programme Serveur à lancer avant le Client avec la commande : ./Serveur.exe
+ *
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <linux/types.h>    /* pour les sockets */
@@ -9,11 +16,12 @@ Serveur à lancer avant le client avec la commande : ./Serveur.exe
 #include <string.h> 
 #include <pthread.h>		/* pour bcopy, ... */
 #include "Array.h"
+
+
 #define TAILLE_MAX_NOM 256
 #define NB_CLIENTS_MAX 10
 #define ATTENTE_DEBUT_PARTIE 10
 #define ATTENTE_FIN_JEU 10
-
 #define TAILLE_PHRASE_SANS_CODE 195
 #define TAILLE_CODE 5
 #define TAILLE_PHRASE_AVEC_CODE 200
@@ -25,7 +33,15 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
 
-/* Structure representant une reponse d'un client. */
+
+/**
+ * \struct reponse_client
+ * \brief Structure composé d'une chaine et d'un identifiant
+ *
+ * Structure représentant une réponse d'un joueur.
+ * La chaine se termine obligatoirement par un zéro de fin et
+ * connait l'identifiant du joueur qui a envoyé la réponse.
+ */
 typedef struct 
 {
     int ident;
@@ -33,7 +49,14 @@ typedef struct
 } 
 reponse_client;
 
-/* Structure stockant les reponses des clients. */
+
+/**
+ * \struct liste_reponse_clients
+ * \brief Structure composé d'une liste de réponses et de la taille de cette liste
+ *
+ * Structure stockant les réponses des joueurs lors d'une partie.
+ * La liste contient des objets de type reponse_client et connait le nombre d'objets qu'elle contient.
+ */
 typedef struct 
 {
     reponse_client liste_rep[NB_CLIENTS_MAX];
@@ -42,7 +65,13 @@ typedef struct
 liste_reponse_clients;
 
 
-/* Structure stockant les informations des threads clients et du serveur. */
+/**
+ * \struct serveur_t
+ * \brief Structure pour la gestion des threads et du serveur
+ *
+ * Structure stockant les informations des threads clients (joueurs) et du serveur.
+ * Les threads partagent les informations sur les clients et la liste des réponses.
+ */
 typedef struct
 {
    Array * tabClients;
@@ -56,12 +85,19 @@ typedef struct
 }
 serveur_t;
 
- //variable globale
+
+/* Variable globale de type serveur_t */
 serveur_t serveur;
 
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* creation de la socket */
+/**
+ * \fn int create_socket(int socket_descriptor)
+ * \brief Fonction de création du socket
+ *
+ * \param socket_descriptor int qui stockera la description du socket
+ * \return socket_descriptor la description du socket crée
+ */
 int create_socket(int socket_descriptor) {
     if ((socket_descriptor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("erreur : impossible de creer la socket de connexion avec le client.");
@@ -69,8 +105,16 @@ int create_socket(int socket_descriptor) {
     }
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
-/* association du socket socket_descriptor à la structure d'adresse adresse_locale */
+/**
+ * \fn void bind_socket(int socket_descriptor, sockaddr_in adresse_locale)
+ * \brief Fonction qui associe le socket à l'adresse de connexion
+ *
+ * \param socket_descriptor int stockant la description du socket
+ * \param adresse_locale sockaddr_in est la structure d'adresse locale
+ * \return void
+ */
 void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
     if ((bind(socket_descriptor, (sockaddr*)(&adresse_locale), sizeof(adresse_locale))) < 0) {
         perror("erreur : impossible de lier la socket a l'adresse de connexion.");
@@ -78,16 +122,30 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
     }
 }
 
-/* envoi du message vers le serveur */
-static void write_server(int socket_descriptor, char *mesg) {
+
+/////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \fn static void write_player(int socket_descriptor, char *mesg)
+ * \brief Fonction qui envoi un message vers un joueur
+ *
+ * \param socket_descriptor int stockant la description du socket
+ * \param mesg chaine qui contient le message à envoyer
+ * \return void
+ */
+static void write_player(int socket_descriptor, char *mesg) {
     if ((write(socket_descriptor, mesg, strlen(mesg))) <= 0) {
         perror("erreur : impossible d'ecrire le message destine au serveur.");
         exit(1);
     }
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
 /* réception d'un message envoyé par le serveur */
+/*
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+*/
 char * reception(int sock) {
     //char *buffer = malloc(256*sizeof(char));//laisser en tableau sinon envoi 8 lettres par 8
     char * buffer = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
@@ -160,7 +218,7 @@ void prevenir_leader() {
     for (i = 0; i < serveur.tabClients->used; ++i) {
             // printf("maybe? %d\n",serveur.tabClients->array[i].leader);
        if(serveur.tabClients->array[i].leader == 1) {
-            write_server(serveur.tabClients->array[i].socket,trigger);
+            write_player(serveur.tabClients->array[i].socket,trigger);
 
        } 
     }
@@ -227,7 +285,7 @@ void prevenir_clients(int k, char * suiv) {
     memcpy(reponse + strlen(serveur.tabClients->array[k].pseudo) , suiv, strlen(suiv));
     reponse = crea_phrase(reponse,"0002");
     for(w = 0; w < serveur.tabClients->used; w++) {
-        write_server(serveur.tabClients->array[w].socket,reponse);
+        write_player(serveur.tabClients->array[w].socket,reponse);
         sleep(1);
     }
 }
@@ -284,7 +342,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                 if(serveur.tabClients->array[j].leader == 0) {
 
 
-                    write_server(serveur.tabClients->array[j].socket,reponse);
+                    write_player(serveur.tabClients->array[j].socket,reponse);
 
                 } 
             }
@@ -390,10 +448,10 @@ void envoi_resultat_leader() {
 
         printf("%d, %s de taille %zd\n",i,reponse, strlen(reponse));
         
-        write_server(j, reponse);
+        write_player(j, reponse);
         sleep(1);
     }
-    write_server(j, "0003~go");
+    write_player(j, "0003~go");
 
     serveur.fin_partie = 0;
     return;
