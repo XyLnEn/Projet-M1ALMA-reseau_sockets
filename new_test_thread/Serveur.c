@@ -25,13 +25,15 @@
 #define TAILLE_PHRASE_SANS_CODE 195
 #define TAILLE_CODE 5
 #define TAILLE_PHRASE_AVEC_CODE 200
-#define SCORE_FIN_PARTIE 3
+#define SCORE_FIN_PARTIE 1
 
 
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_in sockaddr_in;
 typedef struct hostent hostent;
 typedef struct servent servent;
+
+struct timeval timeout;
 
 
 /**
@@ -222,13 +224,16 @@ void prevenir_leader() {
  * \return void
  */
 void affich_joueurs() {
-    printf("pseudo\t\t score\t leader\n");
+    printf("*******************************************\n");
+    printf("* pseudo\t * score\t * leader *\n");
+    printf("*******************************************\n");
     int i = 0;
     for (i = 0; i < serveur.tabClients->used; ++i) {
-        printf("%s\t %d\t %d\t %d\n", 
+        printf("* %s\t\t * %d\t\t * %d\t *\n", 
              serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].score,
-             serveur.tabClients->array[i].leader, serveur.tabClients->array[i].socket);
+             serveur.tabClients->array[i].leader);
     }
+    printf("*******************************************\n");
     return;
 }
 
@@ -344,7 +349,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
         else if (i == 1) {
 
             reponse = crea_phrase(phrase,"0001");//a changer pour envoyer autre type de messages
-            printf("****************************************************************%s*\n",reponse);
+            // printf("****************************************************************%s*\n",reponse);
             for (j = 0; j < serveur.tabClients->used; ++j) {
                 if(serveur.tabClients->array[j].leader == 0) {
 
@@ -359,7 +364,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             
             if(serveur.fin_partie == 0) {
 
-                printf("premiere reponse\n");
+                // printf("premiere reponse\n");
                 serveur.fin_partie = 1;
             }
 
@@ -380,7 +385,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
             //     printf("%d :",j);
             //     printf("%s\n",serveur.tabReponses->liste_rep[j].phrase);
             // }
-            printf("******************\n");
+            // printf("******************\n");
 
 
             //liberation du mutex
@@ -395,6 +400,20 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                         strcpy(reponse, " a gagne la partie, CONGRATULATION!");
                         printf("%s est le gagnant! CONGRATULATION!\n",serveur.tabClients->array[k].pseudo);
                         prevenir_clients(k,reponse);
+                        printf("nouvelle partie? oui/non\n");
+                        fgets (reponse, 50, stdin);
+                        if(reponse[0] == 'o') {
+                            for(k = 0; k < serveur.tabClients->used; k++) {
+                                serveur.tabClients->array[k].score = 0;
+                            }
+                            choix_leader();
+
+                        } else {
+                            for(k = 0; k < serveur.tabClients->used; k++) {
+                                write_player(serveur.tabClients->array[k].socket,crea_phrase("bye","0000"));
+                            }
+                            exit(0);
+                        }
                     } else {
                         strcpy(reponse, " a gagne ce tour!");
                         printf("%s remporte le point!\n",serveur.tabClients->array[k].pseudo);
@@ -475,8 +494,8 @@ static void * mj_main (void * p_data) {
     while(serveur.tabClients->used < 3) {
         sleep(1);
     }
+    printf("il y a %zd participants pour ce tour, debut...\n",serveur.tabClients->used);
     choix_leader();
-    affich_joueurs();
     while (1) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
@@ -512,7 +531,6 @@ static void * joueur_main (void * p_data)
 
         pseudo = reception(nouv_socket_descriptor);
         decode(pseudo,nouv_socket_descriptor, serveur.tabClients);
-        // sleep(1);//?????????
 
    }
  
@@ -580,9 +598,10 @@ int main (void)
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("\n-----------------------------------------\n");
-    printf("\n-->Numero de port pour la connexion au serveur : %d \n", 
+    printf("\n|-----------------------------------------------------|\n");
+    printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
+    printf("\n|-----------------------------------------------------|\n");
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);

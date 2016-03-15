@@ -232,7 +232,8 @@ void reaction_message(int socket_descriptor, char * message) {
         //reaction
         switch(convert_code(code)){
             case 0 ://uniquement pour serveur, OH OH PROBLEMO
-                printf("wat");
+                printf("fin du jeu, exit\n");
+                exit(0);
                 break;
             case 1 : //demande de completion de la phrase envoyée
                 complete_sentence(socket_descriptor , phrase);
