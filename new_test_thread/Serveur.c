@@ -168,6 +168,18 @@ void prevenir_leader() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
+void affich_clients() {
+    printf("pseudo\t score\t leader\n");
+    int i = 0;
+    for (i = 0; i < serveur.tabClients->used; ++i) {
+        printf("%s\t %d\t %d\t %d\n", 
+             serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].score,
+             serveur.tabClients->array[i].leader, serveur.tabClients->array[i].socket);
+    }
+    return;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
 void choix_leader() {
     if(serveur.tabClients->used == 0) {
         perror("erreur : choix leader impossible");
@@ -219,6 +231,7 @@ void prevenir_clients(int k, char * suiv) {
         sleep(1);
     }
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 // char * decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
@@ -348,17 +361,6 @@ int accept_client(int socket_descriptor, sockaddr_in adresse_client_courant, int
 
 }
 
-/////////////////////////////////////////////////////////////////////////////////////
-void affich_clients() {
-    printf("pseudo\t score\t leader\n");
-    int i = 0;
-    for (i = 0; i < serveur.tabClients->used; ++i) {
-        printf("%s\t %d\t %d\t %d\n", 
-             serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].score,
-             serveur.tabClients->array[i].leader, serveur.tabClients->array[i].socket);
-    }
-    return;
-}
 
 /////////////////////////////////////////////////////////////////////////////////////
 void envoi_resultat_leader() {
@@ -437,7 +439,7 @@ static void * joueur_main (void * p_data)
 {
     char * pseudo;
     char * temp;
-    int nouv_socket_descriptor = (int) p_data;
+    int nouv_socket_descriptor = (intptr_t) p_data;
  
    while (1)
    {
@@ -553,7 +555,7 @@ int main (void)
 
 			thread_Liaison_Joueur = pthread_create (
 			& serveur.thread_clients [i], NULL,
-			joueur_main, (void *) nouv_socket_descriptor
+			joueur_main, (void*)(intptr_t) nouv_socket_descriptor
 		 	);
             i++;
 

@@ -3,13 +3,13 @@
 
 # définition des variables
 CC = gcc
-#CFLAGS = -Wall -Wextra -pedantic
+CFLAGS = -Wall -Wextra -pedantic -ansi
 SOURCES = Array.c Serveur.c Client.c
 OBJECTS = $(SOURCES:.c =.o)
 
+# regles
 all: Serveur Client
 
-# regles
 Serveur: 
 	$(CC) Array.c Serveur.c -o Serveur.exe -lpthread
 

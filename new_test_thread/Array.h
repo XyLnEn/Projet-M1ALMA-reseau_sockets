@@ -4,12 +4,12 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-/* structure de clients */
+/* structure de joueurs */
 typedef struct {
 	int socket;
    char * pseudo;
    int score;
-   int leader;
+   int leader; /* boolean : 1 pour leader, 0 pour non leader */
    pthread_t assigned_thread;
 } Info_player;
 
@@ -20,11 +20,13 @@ typedef struct {
   size_t size;
 } Array;
 
-/* initialisation d'un tableau dynamique de clients */
+/* initialisation d'un tableau dynamique de joueurs */
 void initArray(Array *a, size_t initialSize);
-/* ajout d'un client dans le tableau */
+
+/* ajout d'un joueurs dans le tableau */
 void insertArray(Array *a, Info_player element);
-/* vide le tableau de clients */
+
+/* vide le tableau de joueurs */
 void freeArray(Array *a);
 
 #endif //ARRAY_HPP
