@@ -10,6 +10,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <signal.h>
 #include <linux/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -28,6 +29,8 @@ typedef struct hostent 		hostent;
 typedef struct servent 		servent;
 
 
+
+
 /**
  * \struct listePhrases
  * \brief Structure composé d'une liste de phrases et de la taille de cette liste
@@ -44,6 +47,7 @@ typedef struct {
 /* Variable globale */
 listePhrases tabReponses;
 int isleader = 0;
+int socket_descriptor;
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -132,6 +136,18 @@ static void write_server(int socket_descriptor, char *mesg) {
 		perror("erreur : impossible d'ecrire le message destine au serveur.");
 		exit(1);
 	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+/* $$$gestion ctrl+c */
+void INThandler(int sig) {
+    if(isleader == 1) {
+        printf("\nterminez au moins le tour...");
+    } else {
+        write_server(socket_descriptor, "0005~bye");
+    }
+    signal(SIGINT, INThandler);
+    fflush(stdout);
 }
 
 
@@ -402,7 +418,7 @@ void vie_joueur(int socket_descriptor) {
 int main(int argc, char **argv) {
     int i;
 
-    int socket_descriptor; 	    /* descripteur de socket */
+    //int socket_descriptor; 	    /* descripteur de socket */
     sockaddr_in adresse_locale; /* adresse de socket local */
     hostent * ptr_host;         /* info sur une machine hote */
     servent * ptr_service;      /* info sur service */
@@ -419,6 +435,7 @@ int main(int argc, char **argv) {
     }
     tabReponses.nbPhrases = 0;
 
+    signal(SIGINT, INThandler);
 
     /* trouver le serveur à partir de son adresse */
     ///////////find_ad_serv(ptr_host, host);
