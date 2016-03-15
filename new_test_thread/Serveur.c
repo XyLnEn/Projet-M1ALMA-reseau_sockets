@@ -460,6 +460,7 @@ void envoi_resultat_leader() {
     }
     write_player(j, "0003~go");
 
+    
     serveur.fin_partie = 0;
     return;
 }
