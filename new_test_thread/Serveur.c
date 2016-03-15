@@ -134,18 +134,20 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
  */
 static void write_player(int socket_descriptor, char *mesg) {
     if ((write(socket_descriptor, mesg, strlen(mesg))) <= 0) {
-        perror("erreur : impossible d'ecrire le message destine au serveur.");
+        perror("erreur : impossible d'ecrire le message destine au joueur.");
         exit(1);
     }
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////
-/* réception d'un message envoyé par le serveur */
-/*
-¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
-¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
-*/
+/**
+ * \fn char * reception(int sock)
+ * \brief Fonction qui reçoit un message envoyé par un joueur
+ *
+ * \param sock int stockant la description du socket
+ * \return cleaned_sentence une chaine contenant le message envoyé par le joueur
+ */
 char * reception(int sock) {
     //char *buffer = malloc(256*sizeof(char));//laisser en tableau sinon envoi 8 lettres par 8
     char * buffer = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
@@ -158,7 +160,6 @@ char * reception(int sock) {
         return "";
     }
 
-    
     //traitement du message 
     int i;
     for(i = 0; i < longueur; i++) {
@@ -180,6 +181,7 @@ char * reception(int sock) {
     return cleaned_sentence;
 }
 
+/* blblblblblblblblblblblbbllllllllllllll*/
 ////////////////////////////////////////////////////////////////////////////////////
 /*
 void renvoi (int sock) {
