@@ -3,20 +3,19 @@
 
 # définition des variables
 CC = gcc
-#CFLAGS = -Wall -Wextra -pedantic
+CFLAGS = -Wall -Wextra -pedantic -ansi
 SOURCES = Array.c Serveur.c Client.c
 OBJECTS = $(SOURCES:.c =.o)
 
 # regles
-serveur: Array.c Serveur.c
-	$(CC) -o serveur Array.c Serveur.c
+all: Serveur Client
 
-client: Client.c
-	$(CC) -o client Client.c
+Serveur: 
+	$(CC) Array.c Serveur.c -o Serveur.exe -lpthread
 
-Array.c: Array.h
-	@touch Array.h
+Client: 
+	$(CC) Client.c -o Client.exe
 
 # action clean
 clean:
-	-rm *.o client serveur
+	-rm *.o *~ Client.exe Serveur.exe
