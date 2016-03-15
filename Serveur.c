@@ -224,16 +224,16 @@ void prevenir_leader() {
  * \return void
  */
 void affich_joueurs() {
-    printf("*******************************************\n");
+    printf("\n*******************************************\n");
     printf("* pseudo\t * score\t * leader *\n");
     printf("*******************************************\n");
     int i = 0;
     for (i = 0; i < serveur.tabClients->used; ++i) {
-        printf("* %s\t\t * %d\t\t * %d\t *\n", 
+        printf("* %s\t\t * %d\t\t * %d\t  *\n", 
              serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].score,
              serveur.tabClients->array[i].leader);
     }
-    printf("*******************************************\n");
+    printf("*******************************************\n\n");
     return;
 }
 
@@ -406,9 +406,9 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                     serveur.tabClients->array[k].score++;
                     if(serveur.tabClients->array[k].score >= SCORE_FIN_PARTIE) {
                         strcpy(reponse, " a gagne la partie, CONGRATULATION!");
-                        printf("%s est le gagnant! CONGRATULATION!\n",serveur.tabClients->array[k].pseudo);
+                        printf("\n%s est le gagnant! CONGRATULATION!\n",serveur.tabClients->array[k].pseudo);
                         prevenir_clients(k,reponse);
-                        printf("nouvelle partie? oui/non\n");
+                        printf("\nnouvelle partie? oui/non\n");
                         fgets (reponse, 50, stdin);
                         if(reponse[0] == 'o') {
                             for(k = 0; k < serveur.tabClients->used; k++) {
@@ -424,7 +424,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                         }
                     } else {
                         strcpy(reponse, " a gagne ce tour!");
-                        printf("%s remporte le point!\n",serveur.tabClients->array[k].pseudo);
+                        printf("\n%s remporte le point!\n",serveur.tabClients->array[k].pseudo);
                         serveur.tabReponses->nb_contenu = 0;
                         prevenir_clients(k,reponse);
                         choix_leader();
@@ -502,7 +502,7 @@ static void * mj_main (void * p_data) {
     while(serveur.tabClients->used < 3) {
         sleep(1);
     }
-    printf("il y a %zd participants pour ce tour, debut...\n",serveur.tabClients->used);
+    printf("\nil y a %zd participants pour ce tour, debut...\n",serveur.tabClients->used);
     choix_leader();
     while (1) {
          /* Debut de la zone protegee. */
@@ -516,7 +516,7 @@ static void * mj_main (void * p_data) {
 
         pthread_mutex_lock (& serveur.mutex_stock);
 
-        printf("fin du jeu, choix du gagnant: \n");
+        printf("\nfin du jeu, choix du gagnant: \n");
 
         envoi_resultat_leader();
 
