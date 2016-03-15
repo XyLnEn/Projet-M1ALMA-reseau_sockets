@@ -78,6 +78,14 @@ void bind_socket(int socket_descriptor, sockaddr_in adresse_locale) {
     }
 }
 
+/* envoi du message vers le serveur */
+static void write_server(int socket_descriptor, char *mesg) {
+    if ((write(socket_descriptor, mesg, strlen(mesg))) <= 0) {
+        perror("erreur : impossible d'ecrire le message destine au serveur.");
+        exit(1);
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////
 /* réception d'un message envoyé par le serveur */
 char * reception(int sock) {
@@ -152,7 +160,7 @@ void prevenir_leader() {
     for (i = 0; i < serveur.tabClients->used; ++i) {
             // printf("maybe? %d\n",serveur.tabClients->array[i].leader);
        if(serveur.tabClients->array[i].leader == 1) {
-            write(serveur.tabClients->array[i].socket,trigger,strlen(trigger));
+            write_server(serveur.tabClients->array[i].socket,trigger);
 
        } 
     }
@@ -207,7 +215,7 @@ void prevenir_clients(int k, char * suiv) {
     memcpy(reponse + strlen(serveur.tabClients->array[k].pseudo) , suiv, strlen(suiv));
     reponse = crea_phrase(reponse,"0002");
     for(w = 0; w < serveur.tabClients->used; w++) {
-        write(serveur.tabClients->array[w].socket,reponse,strlen(reponse));
+        write_server(serveur.tabClients->array[w].socket,reponse);
         sleep(1);
     }
 }
@@ -263,7 +271,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
                 if(serveur.tabClients->array[j].leader == 0) {
 
 
-                    write(serveur.tabClients->array[j].socket,reponse,strlen(reponse));
+                    write_server(serveur.tabClients->array[j].socket,reponse);
 
                 } 
             }
@@ -380,10 +388,10 @@ void envoi_resultat_leader() {
 
         printf("%d, %s de taille %zd\n",i,reponse, strlen(reponse));
         
-        write(j, reponse, strlen(reponse));
+        write_server(j, reponse);
         sleep(1);
     }
-    write(j, "0003~go", 7*sizeof(char));
+    write_server(j, "0003~go");
 
     serveur.fin_partie = 0;
     return;
