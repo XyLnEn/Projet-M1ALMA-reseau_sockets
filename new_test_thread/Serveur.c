@@ -149,18 +149,16 @@ static void write_player(int socket_descriptor, char *mesg) {
  * \return cleaned_sentence une chaine contenant le message envoyé par le joueur
  */
 char * reception(int sock) {
-    //char *buffer = malloc(256*sizeof(char));//laisser en tableau sinon envoi 8 lettres par 8
     char * buffer = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
     char * cleaned_sentence = malloc(TAILLE_PHRASE_AVEC_CODE * sizeof(char));
     strcpy(cleaned_sentence,"");
-    // strcpy()
     int longueur;
    
     if ((longueur = read(sock, buffer, TAILLE_PHRASE_AVEC_CODE)) <= 0){ 
         return "";
     }
 
-    //traitement du message 
+    // nettoie la fin du mot pour qu'il se termine obligatoirement par un zéro de fin 
     int i;
     for(i = 0; i < longueur; i++) {
         if(buffer[i] == '\n') {
@@ -168,41 +166,23 @@ char * reception(int sock) {
         }
     }
 
-
     memcpy(cleaned_sentence, buffer, longueur);
     cleaned_sentence[longueur+1] ='\0';
 
-    // buffer[strlen(buffer)-1] ='\0';//attention erreur potentielle
-
-    //printf("marche1?");
-    printf("reception d'un message de taille %d : %s|\n", longueur, cleaned_sentence);
-
-    //printf("marche2?");
+    printf("reception d'un message de taille %d : %s\n", longueur, cleaned_sentence);
     return cleaned_sentence;
 }
 
-/* blblblblblblblblblblblbbllllllllllllll*/
-////////////////////////////////////////////////////////////////////////////////////
-/*
-void renvoi (int sock) {
 
-    char buffer[TAILLE_PHRASE_AVEC_CODE];
-    int longueur;
-   
-    if ((longueur = read(sock, buffer, sizeof(buffer))) <= 0) 
-    	return;
-    //
-	 //traitement du message 
-	printf("reception d'un message.\n");
-    printf("message lu : %s \n", buffer);
-    
-    buffer[longueur+1] ='\0';
-    return;
-}
-
-*/
 ////////////////////////////////////////////////////////////////////////////////////
-//genere la concat de code~phrase proprement
+/**
+ * \fn char * crea_phrase(char * mot, char * code)
+ * \brief Fonction génère la concaténation de code~ + message proprement
+ *
+ * \param mot chaine contenant le message envoyé par le joueur
+ * \param code chaine contenant le code qui indique le type de message envoyé
+ * \return fin la chaine contenant la concaténation de code~ + message
+ */
 char * crea_phrase(char * mot, char * code) {
 
     char * fin = malloc((strlen(mot) + strlen(code)+1) * sizeof(char));
@@ -212,13 +192,19 @@ char * crea_phrase(char * mot, char * code) {
     return fin;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
+/**
+ * \fn void prevenir_leader()
+ * \brief Fonction qui informe au joueur qu'il est leader
+ *
+ * \return void
+ */
 void prevenir_leader() {
-    char * trigger = malloc(7*sizeof(char));//on connait exactement la taille
+    char * trigger = malloc(7*sizeof(char));
     trigger = crea_phrase("go","0003");
     int i = 0;
     for (i = 0; i < serveur.tabClients->used; ++i) {
-            // printf("maybe? %d\n",serveur.tabClients->array[i].leader);
        if(serveur.tabClients->array[i].leader == 1) {
             write_player(serveur.tabClients->array[i].socket,trigger);
 
@@ -227,9 +213,16 @@ void prevenir_leader() {
 
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
-void affich_clients() {
-    printf("pseudo\t score\t leader\n");
+/**
+ * \fn void affich_joueurs()
+ * \brief Fonction qui affiche la liste des joueurs de la partie
+ *
+ * \return void
+ */
+void affich_joueurs() {
+    printf("pseudo\t\t score\t leader\n");
     int i = 0;
     for (i = 0; i < serveur.tabClients->used; ++i) {
         printf("%s\t %d\t %d\t %d\n", 
@@ -239,7 +232,19 @@ void affich_clients() {
     return;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
+
+/**
+
+*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+ * \fn char * crea_phrase(char * mot, char * code)
+ * \brief Fonction génère la concaténation de code~ + message proprement
+ *
+ * \param mot chaine contenant le message envoyé par le joueur
+ * \param code chaine contenant le code qui indique le type de message envoyé
+ * \return fin la chaine contenant la concaténation de code~ + message
+ */
 void choix_leader() {
     if(serveur.tabClients->used == 0) {
         perror("erreur : choix leader impossible");
@@ -265,7 +270,7 @@ void choix_leader() {
                 serveur.tabClients->array[0].leader = 1;
             }
         }
-        affich_clients();
+        affich_joueurs();
         prevenir_leader();
     }
     return;
@@ -470,7 +475,7 @@ static void * mj_main (void * p_data) {
         sleep(1);
     }
     choix_leader();
-    affich_clients();
+    affich_joueurs();
     while (1) {
          /* Debut de la zone protegee. */
       pthread_mutex_lock (& serveur.mutex_stock);
@@ -600,15 +605,6 @@ int main (void)
 		/* adresse_client_courant sera renseigné par accept via les infos du connect */
 		nouv_socket_descriptor = accept_client(socket_descriptor, adresse_client_courant, longueur_adresse_courante);
 
-        //         if ((nouv_socket_descriptor = 
-        //     accept(socket_descriptor, 
-        //            (sockaddr*)(&adresse_client_courant),
-        //            &longueur_adresse_courante))
-        //      < 0) {
-        //     perror("erreur : impossible d'accepter la connexion avec le client.");
-        //     exit(1);
-        // }
-
 		/* Creation des threads des joueurs si celui du maitre du jeu a reussi. */
 		if (! thread_Maitre_Jeu)
 		{
@@ -624,15 +620,6 @@ int main (void)
 				fprintf (stderr, "%s", strerror (thread_Liaison_Joueur));
 			}
 		}
-
-    
-        
-		// else
-		// {
-		// 	fprintf (stderr, "%s", strerror (ret));
-		// }
-
-		//close(nouv_socket_descriptor);//garder?
     } 
     
 //----------------------------------------------------------------------------------------------------------
