@@ -143,6 +143,14 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     write_server(socket_descriptor,str);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+
+void affiche_phrase(char * phrase) {
+    if(!strstr(phrase,"|")) {
+        printf("vous avez reçu la phrase: %s\n", phrase);
+    }
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /* recupere la liste des phrases reçu et choisit le gagnant */
@@ -191,9 +199,9 @@ void write_sentence(int socket_descriptor) {
         memcpy(clean +1, mesg, strlen(mesg));
         memcpy(mesg, clean, strlen(clean));
     }
-    printf("lolololo %c|\n", mesg[strlen(mesg)-2]);
+    //printf("lolololo %c|\n", mesg[strlen(mesg)-2]);
     if(mesg[strlen(mesg)-2] == '_') {
-        printf("youhou");
+        //printf("youhou");
         memcpy(clean, mesg, strlen(mesg)-1);
         memcpy(clean + strlen(mesg)-1, " \0", 2);
         memcpy(mesg, clean, strlen(clean));
@@ -235,7 +243,7 @@ void reaction_message(int socket_descriptor, char * message) {
                     // tabReponses.tabPhrases[tabReponses.nbPhrases] = phrase;
                     tabReponses.nbPhrases++;
                 }
-                printf("phrase reçue: %s\n",phrase);
+                affiche_phrase(phrase);
                 break;
             case 3 : //demande speciale: transforme un non-leader en leader ou demande au leader de choisir une phrase de resultat
                 if(isleader == 1) {
