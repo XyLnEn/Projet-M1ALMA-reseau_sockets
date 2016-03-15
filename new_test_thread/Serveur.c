@@ -1,6 +1,6 @@
 /**
  * \file Serveur.c
- * \brief Serveur qui gère une partie du jeu Sentence against humanity
+ * \brief Serveur qui gère une partie en tant que maitre du jeu Sentence against humanity
  * \author Lenny Lucas - Alicia Boucard
  * \version 1
  * \date mars 2016
@@ -281,11 +281,19 @@ void choix_leader() {
     return;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////////////
-/* conversion code to int */
+/**
+ * \fn int convert_code(char * s)
+ * \brief Fonction qui convertit un code en int
+ *
+ * \param s chaine contenant le code à convertir
+ * \return le code converti en int
+ */
 int convert_code(char * s) {
     return (((s[0] - '0')*1000) + ((s[1] - '0')*100) + ((s[2] - '0')*10) + ((s[3] - '0')));
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////
 /*previens les client du gagnant d'un tour */
