@@ -148,7 +148,7 @@ char * crea_phrase(char * mot, char * code) {
     char * fin = malloc((strlen(mot) + strlen(code) + 1) * sizeof(char));
     memcpy(fin, code, strlen(code));
     memcpy(fin + strlen(code), "~", 1);
-    printf("%zd : %s|\n",strlen(mot),mot);
+    // printf("%zd : %s|\n",strlen(mot),mot);
     if(mot[strlen(mot)-1] == '\n') {
         memcpy(fin + strlen(code) + 1, mot, strlen(mot)-1);
     } else {
@@ -213,7 +213,6 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     }
     char * str = malloc( (strlen(reponse) + TAILLE_CODE) *sizeof(char));
     str = crea_phrase(reponse,"0002");
-    printf("%zd\n",strlen(str));
     write_server(socket_descriptor,str);
 }
 

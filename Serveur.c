@@ -338,20 +338,16 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabClients) {
         i = convert_code(code);
         //on regarde ici le code et on reagit en consequence
         if (i == 0){
-            element.socket = nouv_socket_descriptor;//a faire apres la connexion!
+            if(serveur.tabClients->used < NB_CLIENTS_MAX) {
+                element.socket = nouv_socket_descriptor;//a faire apres la connexion!
             
-            element.pseudo = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
-            strcpy(element.pseudo,phrase);
+                element.pseudo = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
+                strcpy(element.pseudo,phrase);
 
-            element.score = 0;
-            element.leader = 0;
-            insertArray(serveur.tabClients, element);
-            // printf("ici used = %zu \n", serveur.tabClients->used);//pour voir que chaque nouvelle connexion de client est vue
-            // for(i = 0; i < serveur.tabClients->used; i++) {
-            //     printf("leader: %s : %d \n", serveur.tabClients->array[i].pseudo, serveur.tabClients->array[i].socket);//affichage de tout les joueurs avec le socket sur lequel les contacter.
-            // }
-            //reponse = crea_phrase(phrase,"0003");//a changer pour envoyer autre type de messages
-
+                element.score = 0;
+                element.leader = 0;
+                insertArray(serveur.tabClients, element);
+            }
             return;
         }
         else if (i == 1) {
