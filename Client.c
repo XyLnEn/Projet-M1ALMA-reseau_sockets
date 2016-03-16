@@ -147,7 +147,7 @@ void INThandler(int sig) {
         write_server(socket_descriptor, "0005~bye");
     }
     signal(SIGINT, INThandler);
-    fflush(stdout);
+    // fflush(stdout);
 }
 
 
