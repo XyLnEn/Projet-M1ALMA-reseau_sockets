@@ -656,7 +656,7 @@ int main (void)
     printf("\n|-----------------------------------------------------|\n");
     printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    printf("\n|-----------------------------------------------------|\|\n");
+    printf("\n|-----------------------------------------------------|\n");
 
     
     /* creation de la socket */
