@@ -321,14 +321,16 @@ void exit_game(int socket) {
         { //trouver qui a demander de se deco
             if(i != serveur.tabJoueurs->used -1) 
             {
-                for(j = i; j< serveur.tabJoueurs->used-1; j++)//on s'arrete au dernier de la liste 
-                {
-                    serveur.tabJoueurs->array[j] = serveur.tabJoueurs->array[j+1];
-                }
+                // for(j = i; j< serveur.tabJoueurs->used-1; j++)//on s'arrete au dernier de la liste 
+                // {
+                //     serveur.tabJoueurs->array[j] = serveur.tabJoueurs->array[j+1];
+                // }
+
+                memmove(serveur.tabJoueurs->array + i ,serveur.tabJoueurs->array + i + 1, (serveur.tabJoueurs->used-i-1)*sizeof(Array) );
             }
             serveur.tabJoueurs->used--;
             write_player(socket,"0000~bye");
-            close(socket);
+            //close(socket);
         }
     }
 }
@@ -445,7 +447,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
             }
         }
         else if(i == 5) {
-            exit_game(nouv_socket_descriptor);
+            //exit_game(nouv_socket_descriptor);
         }
     }
     return;

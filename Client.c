@@ -142,7 +142,7 @@ static void write_server(int socket_descriptor, char *mesg) {
 /* $$$gestion ctrl+c */
 void INThandler(int sig) {
     if(isleader == 1) {
-        printf("\nterminez au moins le tour...");
+        printf("\nterminez au moins le tour...\n");
     } else {
         write_server(socket_descriptor, "0005~bye");
     }
@@ -262,6 +262,7 @@ void choose_answer(int socket_descriptor) {
         printf("erreur: aucune phrases n'a été reçues.");
     } else {
         int i;
+        int k =0;
         char * number = malloc(TAILLE_CODE*sizeof(char));
         char * words = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
         char * index[10];
@@ -273,10 +274,16 @@ void choose_answer(int socket_descriptor) {
         
             words = strtok(NULL,"|");
             printf("phrase no %d : %s\n",i,words);
+            k++;
         }
         printf("quel est le gagnant? : ");
         fgets (number, 5, stdin);
         i = number[0] - '0';//transforme string en int
+        while((i > k) && (i >0)){
+            printf("non mais vraiment, c'est qui le gagnant? :");
+            fgets (number, 5, stdin);
+            i = number[0] - '0';//transforme string en int
+        }
         char * str = malloc( (strlen(index[i]) + 5) *sizeof(char));
         str = crea_phrase(index[i],"0004");
         write_server(socket_descriptor,str);
@@ -293,13 +300,13 @@ void choose_answer(int socket_descriptor) {
  * \return void
  */
 void write_sentence(int socket_descriptor) {
-    printf("vous etes leader, quelle phrase envoyer? (format XXX_XX) : ");
+    printf("\n|vous etes leader, quelle phrase envoyer? (format XXX_XX ou X peut etre nul) : ");
     char* mesg = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
     char * clean = malloc((strlen(mesg) + 2) * sizeof(char));
     fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
     while ( (strlen(mesg) < 0) && (strstr(mesg, "_") == NULL) && (strstr(mesg, "~") == NULL)) {
-        printf("le message doit contenir le mot _ pour signifier la partie a completer\n");
-        printf("il ne peut pas contenir le charactere ~ ni _\n");
+        printf("\nle message doit contenir le mot _ pour signifier la partie a completer");
+        printf("\nil ne peut pas contenir le charactere ~ ni _\n");
         fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
     }
     if(mesg[0] == '_') {
@@ -437,9 +444,6 @@ int main(int argc, char **argv) {
 
     signal(SIGINT, INThandler);
 
-    /* trouver le serveur à partir de son adresse */
-    ///////////find_ad_serv(ptr_host, host);
-
     if ((ptr_host = gethostbyname(host)) == NULL) {
     perror("erreur : impossible de trouver le serveur a partir de son adresse.");
     exit(1);
@@ -449,27 +453,8 @@ int main(int argc, char **argv) {
     bcopy((char*)ptr_host->h_addr, (char*)&adresse_locale.sin_addr, ptr_host->h_length);
     adresse_locale.sin_family = AF_INET; /* ou ptr_host->h_addrtype; */
     
-    /* 2 facons de definir le service que l'on va utiliser a distance */
-    /* (commenter l'une ou l'autre des solutions) */
-    
-    /*-----------------------------------------------------------*/
-    /* SOLUTION 1 : utiliser un service existant, par ex. "irc" */
-    /*
-    if ((ptr_service = getservbyname("irc","tcp")) == NULL) {
-	perror("erreur : impossible de recuperer le numero de port du service desire.");
-	exit(1);
-    }
-    adresse_locale.sin_port = htons(ptr_service->s_port);
-    */
-    /*-----------------------------------------------------------*/
-    
-    /*-----------------------------------------------------------*/
-    /* SOLUTION 2 : utiliser un nouveau numero de port */
     adresse_locale.sin_port = htons(5000);
-    /*-----------------------------------------------------------*/
-    
-   //printf("numero de port pour la connexion au serveur : %d \n", ntohs(adresse_locale.sin_port));
-    
+
     /*-----------------------------------------------------------
     DEBUT DU JEU
     -----------------------------------------------------------*/
@@ -483,9 +468,12 @@ int main(int argc, char **argv) {
     char * temp = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
     size_t len = 0;
     printf("\n-----------------------------------------\n");
-    printf("\nEcrivez votre pseudo : ");
+
+    printf("quel sera votre pseudo? : ");
     getline(&temp, &len, stdin);
 
+    printf("Bienvenue %s",temp);
+    printf("commençons...\n");
     char * code = malloc(TAILLE_CODE*sizeof(char));
     code = "0000";
     pseudo = crea_phrase(temp,code);
