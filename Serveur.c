@@ -105,11 +105,6 @@ int create_socket(int socket_descriptor) {
         perror("erreur : impossible de creer la socket de connexion avec le client.");
         exit(1);
     }
-    printf("_________________________________________\n");
-    printf("|                                       |\n");
-    printf("|       SENTENCE AGAINST HUMANITY       |\n");
-    printf("|_______________________________________|\n");
-    printf("\n-->Serveur en cours d'exécution.\n");
 }
 
 
@@ -228,7 +223,7 @@ void prevenir_leader() {
  * \return void
  */
 void affich_joueurs() {
-    printf("\n\n*******************************************\n");
+    printf("\n*******************************************\n");
     printf("* pseudo\t * score\t * leader *\n");
     printf("*******************************************\n");
     int i = 0;
@@ -320,22 +315,22 @@ void prevenir_joueurs(int k, char * suiv) {
 void exit_game(int socket) {
     int i;
     int j;
-    pthread_mutex_lock (& serveur.mutex_stock);
     for(i = 0; i< serveur.tabJoueurs->used; i++)
     {
         if(serveur.tabJoueurs->array[i].socket == socket) 
         { //trouver qui a demander de se deco
-
             if(i != serveur.tabJoueurs->used -1) 
             {
-                memmove(serveur.tabJoueurs->array + i ,serveur.tabJoueurs->array + i + 1, (serveur.tabJoueurs->used-i-1)*sizeof(Array) );
+                for(j = i; j< serveur.tabJoueurs->used-1; j++)//on s'arrete au dernier de la liste 
+                {
+                    serveur.tabJoueurs->array[j] = serveur.tabJoueurs->array[j+1];
+                }
             }
-            serveur.tabJoueurs->used = serveur.tabJoueurs->used-1;
+            serveur.tabJoueurs->used--;
             write_player(socket,"0000~bye");
             close(socket);
         }
     }
-    pthread_mutex_unlock (& serveur.mutex_stock);
 }
 
 
@@ -450,7 +445,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
             }
         }
         else if(i == 5) {
-            //exit_game(nouv_socket_descriptor);
+            exit_game(nouv_socket_descriptor);
         }
     }
     return;
@@ -540,7 +535,7 @@ static void * mj_main (void * p_data) {
         sleep(1);
     }
 
-    printf("\n\nil y a %zd participants pour ce tour, debut...\n",serveur.tabJoueurs->used);
+    printf("\nil y a %zd participants pour ce tour, debut...\n",serveur.tabJoueurs->used);
     choix_leader();
     while (1) {
          /* Debut de la zone protegee. */
@@ -552,7 +547,7 @@ static void * mj_main (void * p_data) {
 
         pthread_mutex_lock (& serveur.mutex_stock);
 
-        printf("\n\nfin du jeu, choix du gagnant: \n");
+        printf("\nfin du jeu, choix du gagnant: \n");
 
         envoi_resultat_leader();
       }
@@ -653,11 +648,10 @@ int main (void)
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("\n|-----------------------------------------------------|\n");
+    printf("\n|_____________________________________________________|\n");
     printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    printf("\n|-----------------------------------------------------|\n");
-
+    printf("\n|_____________________________________________________|\n");
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
@@ -684,17 +678,16 @@ int main (void)
         /* Creation des threads des joueurs si celui du maitre du jeu a reussi. */
         if (! thread_Maitre_Jeu)
         {
-            if(i < NB_CLIENTS_MAX) {
-                thread_Liaison_Joueur = pthread_create (
-                & serveur.thread_joueurs [i], NULL,
-                joueur_main, (void*)(intptr_t) nouv_socket_descriptor
-                );
-                i++;
 
-                if (thread_Liaison_Joueur)
-                {
-                    fprintf (stderr, "%s", strerror (thread_Liaison_Joueur));
-                }
+            thread_Liaison_Joueur = pthread_create (
+            & serveur.thread_joueurs [i], NULL,
+            joueur_main, (void*)(intptr_t) nouv_socket_descriptor
+            );
+            i++;
+
+            if (thread_Liaison_Joueur)
+            {
+                fprintf (stderr, "%s", strerror (thread_Liaison_Joueur));
             }
         }
     } 
@@ -703,7 +696,7 @@ int main (void)
 
     /* Attente de la fin des threads. */
     i = 0;
-    for (i = 0; i < serveur.tabJoueurs->used ; i++)
+    for (i = 0; i < serveur.tabJoueurs->used; i++)
     {
         pthread_join (serveur.thread_joueurs [i], NULL);
     }
