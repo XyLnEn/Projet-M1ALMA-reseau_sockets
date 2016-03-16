@@ -223,7 +223,7 @@ void prevenir_leader() {
  * \return void
  */
 void affich_joueurs() {
-    printf("\n*******************************************\n");
+    printf("\n\n*******************************************\n");
     printf("* pseudo\t * score\t * leader *\n");
     printf("*******************************************\n");
     int i = 0;
@@ -509,7 +509,7 @@ static void * mj_main (void * p_data) {
         sleep(1);
     }
 
-    printf("\nil y a %zd participants pour ce tour, debut...\n",serveur.tabJoueurs->used);
+    printf("\n\nil y a %zd participants pour ce tour, debut...\n",serveur.tabJoueurs->used);
     choix_leader();
     while (1) {
          /* Debut de la zone protegee. */
@@ -521,7 +521,7 @@ static void * mj_main (void * p_data) {
 
         pthread_mutex_lock (& serveur.mutex_stock);
 
-        printf("\nfin du jeu, choix du gagnant: \n");
+        printf("\n\nfin du jeu, choix du gagnant: \n");
 
         envoi_resultat_leader();
       }
@@ -625,7 +625,7 @@ int main (void)
     printf("\n|-----------------------------------------------------|\n");
     printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    printf("\n|-----------------------------------------------------|\n");
+    printf("\n|-----------------------------------------------------|\n\n");
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
