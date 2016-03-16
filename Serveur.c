@@ -321,16 +321,20 @@ void exit_game(int socket) {
         { //trouver qui a demander de se deco
             if(i != serveur.tabJoueurs->used -1) 
             {
-                // for(j = i; j< serveur.tabJoueurs->used-1; j++)//on s'arrete au dernier de la liste 
-                // {
-                //     serveur.tabJoueurs->array[j] = serveur.tabJoueurs->array[j+1];
-                // }
-
                 memmove(serveur.tabJoueurs->array + i ,serveur.tabJoueurs->array + i + 1, (serveur.tabJoueurs->used-i-1)*sizeof(Array) );
+            }
+            for(j = 0; j < serveur.tabReponses->nb_contenu; j++){
+                if(serveur.tabReponses->liste_rep[j].ident == socket) {
+                    if(j != serveur.tabReponses->nb_contenu -1) {
+                        memmove(serveur.tabReponses->liste_rep + j , serveur.tabReponses->liste_rep + j + 1, (serveur.tabReponses->nb_contenu-j-1)*sizeof(liste_reponse_joueurs) );
+                    }
+                    serveur.tabReponses->nb_contenu--;
+
+                }
             }
             serveur.tabJoueurs->used--;
             write_player(socket,"0000~bye");
-            //close(socket);
+            close(socket);
         }
     }
 }
@@ -379,6 +383,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
 
                 element.score = 0;
                 element.leader = 0;
+                element.assigned_thread = pthread_self();
                 insertArray(serveur.tabJoueurs, element);
             }
             return;
@@ -421,7 +426,7 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
 
                         printf("%s est le gagnant! CONGRATULATION!\n",serveur.tabJoueurs->array[k].pseudo);
                         prevenir_joueurs(k,reponse);
-                        printf("nouvelle partie? oui/non\n");
+                        printf("nouvelle partie? [o/n]\n");
 
                         fgets (reponse, 50, stdin);
                         if(reponse[0] == 'o') {
@@ -447,7 +452,8 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
             }
         }
         else if(i == 5) {
-            //exit_game(nouv_socket_descriptor);
+            exit_game(nouv_socket_descriptor);
+            pthread_exit(NULL);
         }
     }
     return;
@@ -650,10 +656,10 @@ int main (void)
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("\n|_____________________________________________________|\n");
+    printf("\n|-----------------------------------------------------|\n");
     printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    printf("\n|_____________________________________________________|\n");
+    printf("\n|-----------------------------------------------------|\n");
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
