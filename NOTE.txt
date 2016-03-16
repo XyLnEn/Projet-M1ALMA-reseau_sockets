@@ -84,3 +84,8 @@ serveur fait son boulot et envoie a tt le monde le gagnant (0004~X) il recommenc
 
 creation de room: tab de serveur_t, co passe nom room
 messages hors normes: redirection de room (100X~....)
+
+A PRECISER DANS RAPPORT :
+-rendre exécutable le script bash soit a la mano soit on ajoute une ligne dans makefile
+-avoir un bureau vide les fenetre ne doivent pas apparaitre
+-la taille de base du terminal ne doit pas etre trop grandre pour que les terminaux se positionne tous correctement sur le bureau

@@ -12,9 +12,11 @@ all: Serveur Client
 
 Serveur: 
 	$(CC) Array.c Serveur.c -o Serveur.exe -lpthread
+	chmod +x lancement_rapide.sh
 
 Client: 
 	$(CC) Client.c -o Client.exe
+
 
 # action clean
 clean:

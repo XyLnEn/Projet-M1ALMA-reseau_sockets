@@ -25,7 +25,7 @@
 #define TAILLE_PHRASE_SANS_CODE 195
 #define TAILLE_CODE 5
 #define TAILLE_PHRASE_AVEC_CODE 200
-#define SCORE_FIN_PARTIE 1
+#define SCORE_FIN_PARTIE 3
 
 
 typedef struct sockaddr sockaddr;
@@ -609,7 +609,7 @@ int main (void)
     serveur.fin_partie = 0;
  
     /* Creation du thread du serveur. */
-    printf ("Creation du thread du serveur !\n");
+    //printf ("Creation du thread du serveur !\n");
     thread_Maitre_Jeu = pthread_create (
         & serveur.thread_serveur, NULL, mj_main, NULL);
 
@@ -648,10 +648,10 @@ int main (void)
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("\n|-----------------------------------------------------|\n");
+    printf("\n|_____________________________________________________|\n");
     printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    printf("\n|-----------------------------------------------------|\n");
+    printf("\n|_____________________________________________________|\n");
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
