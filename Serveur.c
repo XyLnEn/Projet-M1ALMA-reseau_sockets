@@ -20,8 +20,8 @@
 
 #define TAILLE_MAX_NOM 256
 #define NB_CLIENTS_MAX 10
-#define ATTENTE_DEBUT_PARTIE 10
-#define ATTENTE_FIN_JEU 10
+#define ATTENTE_DEBUT_PARTIE 30
+#define ATTENTE_FIN_JEU 20
 #define TAILLE_PHRASE_SANS_CODE 195
 #define TAILLE_CODE 5
 #define TAILLE_PHRASE_AVEC_CODE 200
@@ -171,7 +171,7 @@ char * reception(int sock) {
     memcpy(cleaned_sentence, buffer, longueur);
     cleaned_sentence[longueur+1] ='\0';
 
-    printf("reception d'un message de taille %d : %s\n", longueur, cleaned_sentence);
+    printf("Reception d'un message de taille %d : %s\n", longueur, cleaned_sentence);
     return cleaned_sentence;
 }
 
@@ -417,11 +417,11 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
                 if(serveur.tabJoueurs->array[k].socket == j) { //trouvé le gagnant !
                     serveur.tabJoueurs->array[k].score++;
                     if(serveur.tabJoueurs->array[k].score >= SCORE_FIN_PARTIE) {
-                        strcpy(reponse, " a gagne la partie, CONGRATULATION!");
+                        strcpy(reponse, " a gagne la partie, CONGRATULATION !");
 
-                        printf("%s est le gagnant! CONGRATULATION!\n",serveur.tabJoueurs->array[k].pseudo);
+                        printf("%s est le gagnant ! CONGRATULATION !\n",serveur.tabJoueurs->array[k].pseudo);
                         prevenir_joueurs(k,reponse);
-                        printf("nouvelle partie? oui/non\n");
+                        printf("Nouvelle partie ? oui/non\n");
 
                         fgets (reponse, 50, stdin);
                         if(reponse[0] == 'o') {
@@ -437,8 +437,8 @@ void decode(char * test, int nouv_socket_descriptor, Array * tabJoueurs) {
                             exit(0);
                         }
                     } else {
-                        strcpy(reponse, " a gagne ce tour!");
-                        printf("\n%s remporte le point!\n",serveur.tabJoueurs->array[k].pseudo);
+                        strcpy(reponse, " a gagne ce tour !");
+                        printf("\n%s remporte le point !\n",serveur.tabJoueurs->array[k].pseudo);
                         serveur.tabReponses->nb_contenu = 0;
                         prevenir_joueurs(k,reponse);
                         choix_leader();
@@ -537,7 +537,7 @@ static void * mj_main (void * p_data) {
         sleep(1);
     }
 
-    printf("\nil y a %zd participants pour ce tour, debut...\n",serveur.tabJoueurs->used);
+    printf("\nIl y a %zd participants pour ce tour, debut...\n",serveur.tabJoueurs->used);
     choix_leader();
     while (1) {
          /* Debut de la zone protegee. */
@@ -549,7 +549,7 @@ static void * mj_main (void * p_data) {
 
         pthread_mutex_lock (& serveur.mutex_stock);
 
-        printf("\nfin du jeu, choix du gagnant: \n");
+        printf("\nFin du jeu, choix du gagnant : \n");
 
         envoi_resultat_leader();
       }
@@ -650,10 +650,10 @@ int main (void)
     adresse_locale.sin_port = htons(5000);
     /*-----------------------------------------------------------*/
     
-    printf("\n|_____________________________________________________|\n");
+    printf("\n_______________________________________________________\n");
     printf("|-->Numero de port pour la connexion au serveur : %d|", 
            ntohs(adresse_locale.sin_port) /*ntohs(ptr_service->s_port)*/);
-    printf("\n|_____________________________________________________|\n");
+    printf("\n|_____________________________________________________|\n\n");
     
     /* creation de la socket */
     socket_descriptor = create_socket(socket_descriptor);
