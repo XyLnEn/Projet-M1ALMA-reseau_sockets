@@ -221,7 +221,8 @@ void complete_sentence(int socket_descriptor, char * phrase) {
         tamponFin = strtok(NULL,"_");
         memcpy(reponse + strlen(tamponDeb) + strlen(snippet), tamponFin, strlen(tamponFin));
 
-        printf("La phrase :\n--> %s \nvous convient-elle ? oui/non\n", reponse);
+        printf("La phrase :\n--> %s \nvous convient-elle ? [o/n]\n", reponse);
+
         fgets (snippet, 50, stdin);
         if(snippet[0] == 'o') {
             i = 1;
@@ -300,7 +301,9 @@ void choose_answer(int socket_descriptor) {
  * \return void
  */
 void write_sentence(int socket_descriptor) {
+
     printf("\nVous etes leader, quelle phrase envoyer? (au format XXX_XX ou X peut etre nul) : ");
+
     char* mesg = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
     char * clean = malloc((strlen(mesg) + 2) * sizeof(char));
     fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
