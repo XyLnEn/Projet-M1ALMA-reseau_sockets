@@ -60,7 +60,7 @@ int socket_descriptor;
  */
 static void verif_arg(int argc) {
     if (argc != 1) {
-        perror("Usage : ./client");
+        perror("Usage : ./Client.exe");
         exit(1);
     }
 }
@@ -205,10 +205,10 @@ void complete_sentence(int socket_descriptor, char * phrase) {
     char * tamponDeb = malloc(200* sizeof(char));
     char * tamponFin = malloc(200* sizeof(char));
     char * reponse = malloc(TAILLE_PHRASE_SANS_CODE* sizeof(char));
-    printf("le leader vous demande de completer cette phrase: %s\n", phrase);
+    printf("Le leader vous demande de completer cette phrase :\n %s\n", phrase);
     while(i == 0){
         memcpy(oldReponse, phrase, strlen(phrase));
-        printf("par quoi voulez-vous remplacer le blanc (_) dans %s?\n", phrase);
+        printf("Par quoi voulez-vous remplacer le blanc (_) dans \"%s\" ?\n", phrase);
         fgets (snippet, 50, stdin);
         for(j = 0; j < strlen(snippet); j++) {
             if(snippet[j] == '\n') {
@@ -221,7 +221,8 @@ void complete_sentence(int socket_descriptor, char * phrase) {
         tamponFin = strtok(NULL,"_");
         memcpy(reponse + strlen(tamponDeb) + strlen(snippet), tamponFin, strlen(tamponFin));
 
-        printf("la phrase:\n%s\nvous convient-elle? [o/n]\n", reponse);
+        printf("La phrase :\n--> %s \nvous convient-elle ? [o/n]\n", reponse);
+
         fgets (snippet, 50, stdin);
         if(snippet[0] == 'o') {
             i = 1;
@@ -244,7 +245,7 @@ void complete_sentence(int socket_descriptor, char * phrase) {
 
 void affiche_phrase(char * phrase) {
     if(!strstr(phrase,"|")) {
-        printf("vous avez reçu la phrase: %s\n", phrase);
+        printf("Information : %s\n", phrase);
     }
 }
 
@@ -276,11 +277,11 @@ void choose_answer(int socket_descriptor) {
             printf("phrase no %d : %s\n",i,words);
             k++;
         }
-        printf("quel est le gagnant? : ");
+        printf("Quel est le gagnant ? : ");
         fgets (number, 5, stdin);
         i = number[0] - '0';//transforme string en int
         while((i > k) && (i >0)){
-            printf("non mais vraiment, c'est qui le gagnant? :");
+            printf("non mais vraiment, c'est qui le gagnant ? :");
             fgets (number, 5, stdin);
             i = number[0] - '0';//transforme string en int
         }
@@ -300,13 +301,15 @@ void choose_answer(int socket_descriptor) {
  * \return void
  */
 void write_sentence(int socket_descriptor) {
-    printf("\nvous etes leader, quelle phrase envoyer? (format XXX_XX ou X peut etre nul) : ");
+
+    printf("\nVous etes leader, quelle phrase envoyer? (au format XXX_XX ou X peut etre nul) : ");
+
     char* mesg = malloc(TAILLE_PHRASE_SANS_CODE*sizeof(char));
     char * clean = malloc((strlen(mesg) + 2) * sizeof(char));
     fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
     while ( (strlen(mesg) < 0) && (strstr(mesg, "_") == NULL) && (strstr(mesg, "~") == NULL)) {
-        printf("\nle message doit contenir le mot _ pour signifier la partie a completer");
-        printf("\nil ne peut pas contenir le charactere ~ ni _\n");
+        printf("\nLe message doit contenir le mot _ pour signifier la partie a completer.");
+        printf("\nIl ne peut pas contenir le charactere ~ ni _\n");
         fgets (mesg, TAILLE_PHRASE_SANS_CODE, stdin);
     }
     if(mesg[0] == '_') {
@@ -349,7 +352,7 @@ void reaction_message(int socket_descriptor, char * message) {
         //reaction
         switch(convert_code(code)){
             case 0 ://fin du jeu
-                printf("fin du jeu, exit\n");
+                printf("Fin du jeu, exit\n");
                 exit(0);
                 break;
             case 1 : //demande de completion de la phrase envoyée
@@ -469,15 +472,20 @@ int main(int argc, char **argv) {
     size_t len = 0;
     printf("\n-----------------------------------------\n");
 
-    printf("quel sera votre pseudo? : ");
+    printf("Quel sera votre pseudo ? : ");
     getline(&temp, &len, stdin);
+<<<<<<< HEAD
     while(strlen(temp) <2) {
         printf("quel sera votre pseudo? : ");
+=======
+    while(strlen(temp)<1) {
+        printf("\nUn vrai pseudo SVP : ");
+>>>>>>> fe662e17829065a68c90bd0fb0ec32462e73dde9
         getline(&temp, &len, stdin);
     }
 
     printf("Bienvenue %s",temp);
-    printf("commençons...\n");
+    printf("Commençons...\n");
     char * code = malloc(TAILLE_CODE*sizeof(char));
     code = "0000";
     pseudo = crea_phrase(temp,code);
@@ -489,7 +497,7 @@ int main(int argc, char **argv) {
     }
     
     close(socket_descriptor);
-    printf("connexion avec le serveur fermee, fin du programme.\n");
+    printf("-->Connexion avec le serveur fermee, fin du programme.\n");
     exit(0);
     
 }
