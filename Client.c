@@ -396,7 +396,8 @@ void vie_joueur(int socket_descriptor) {
     int i;
    
     if ((longueur = read(socket_descriptor, buffer, sizeof(buffer))) <= 0){
-        printf("ayy");
+        printf("Le serveur a disparu, fin du jeu...");
+        exit(1);
         return ;
     } else {
 
@@ -474,13 +475,9 @@ int main(int argc, char **argv) {
 
     printf("Quel sera votre pseudo ? : ");
     getline(&temp, &len, stdin);
-<<<<<<< HEAD
-    while(strlen(temp) <2) {
-        printf("quel sera votre pseudo? : ");
-=======
-    while(strlen(temp)<1) {
+
+    while(strlen(temp)<2) {
         printf("\nUn vrai pseudo SVP : ");
->>>>>>> fe662e17829065a68c90bd0fb0ec32462e73dde9
         getline(&temp, &len, stdin);
     }
 

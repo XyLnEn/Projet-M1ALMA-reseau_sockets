@@ -19,15 +19,9 @@
 
 
 #define TAILLE_MAX_NOM 256
-<<<<<<< HEAD
 #define NB_CLIENTS_MAX 30
 #define ATTENTE_DEBUT_PARTIE 10
 #define ATTENTE_FIN_JEU 10
-=======
-#define NB_CLIENTS_MAX 10
-#define ATTENTE_DEBUT_PARTIE 30
-#define ATTENTE_FIN_JEU 20
->>>>>>> fe662e17829065a68c90bd0fb0ec32462e73dde9
 #define TAILLE_PHRASE_SANS_CODE 195
 #define TAILLE_CODE 5
 #define TAILLE_PHRASE_AVEC_CODE 200
@@ -163,6 +157,7 @@ char * reception(int sock) {
     int longueur;
    
     if ((longueur = read(sock, buffer, TAILLE_PHRASE_AVEC_CODE)) <= 0){ 
+        exit(1);
         return "";
     }
 
@@ -317,7 +312,13 @@ void prevenir_joueurs(int k, char * suiv) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-/* $$$ */
+/**
+ * \fn void exit_game(int socket)
+ * \brief Fonction retirant un joueur de la partie
+ *
+ * \param socket int le socket a utiliser
+ * \return void
+ */
 void exit_game(int socket) {
     int i;
     int j;
