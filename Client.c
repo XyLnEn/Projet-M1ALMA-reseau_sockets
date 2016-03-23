@@ -471,6 +471,10 @@ int main(int argc, char **argv) {
 
     printf("quel sera votre pseudo? : ");
     getline(&temp, &len, stdin);
+    while(strlen(temp) <2) {
+        printf("quel sera votre pseudo? : ");
+        getline(&temp, &len, stdin);
+    }
 
     printf("Bienvenue %s",temp);
     printf("commençons...\n");
